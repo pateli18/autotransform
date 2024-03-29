@@ -1,0 +1,6 @@
+.venv
+.envrc
+__pycache__
+wandb/
+postgres-data/
+app-data/

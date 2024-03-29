@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: autotransform
+      POSTGRES_DB: autotransform
+      POSTGRES_PASSWORD: autotransform
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autotransform"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  app:
+    image: autotransform:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    command:
+      - python
+      - -m
+      - uvicorn
+      - autotransform.server:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --reload
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      PROCESSING_DEBUG: true
+      POSTGRES_URI: postgresql+asyncpg://autotransform:autotransform@postgres:5432/autotransform
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./app-data:/app-data
+    restart: always

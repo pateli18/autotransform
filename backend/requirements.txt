@@ -1,0 +1,10 @@
+aiofiles
+asyncpg
+cachetools
+fastapi
+httpx
+jsonschema
+pydantic-settings
+sqlalchemy[asyncio]
+sse-starlette
+uvicorn
