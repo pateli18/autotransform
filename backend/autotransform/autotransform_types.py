@@ -299,6 +299,9 @@ class ProcessEventMetadata(BaseModel):
     input_count: int
     output_count: Optional[int]
     status: ProcessingStatus
+    start_timestamp: str = Field(
+        default_factory=lambda: datetime.now().isoformat()
+    )
     timestamp: str
 
 
@@ -309,6 +312,9 @@ class ProcessingMessage(BaseModel):
     input_count: int
     output_count: Optional[int] = None
     status: ProcessingStatus
+    start_timestamp: str = Field(
+        default_factory=lambda: datetime.now().isoformat()
+    )
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
     output: Optional[list[dict]] = None
 

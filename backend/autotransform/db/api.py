@@ -184,5 +184,6 @@ async def get_processing_message(
         output_count=cast(int, message.output_count),
         status=cast(ProcessingStatus, message.status),
         runs=cast(list, message.event_history),
+        start_timestamp=cast(str, message.created_at.isoformat()),
         timestamp=cast(str, message.updated_at.isoformat()),
     )

@@ -631,6 +631,15 @@ async def processing_start(
             status_code=404,
             detail="Config not found",
         )
+    if (
+        request.config_id in processing_message_queue
+        and processing_message_queue[request.config_id].status
+        == ProcessingStatus.running
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Processing already running",
+        )
 
     task_manager.add_task(
         str(request.config_id),
