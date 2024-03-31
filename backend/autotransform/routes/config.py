@@ -95,7 +95,7 @@ async def upsert_config(
             output_schema_commit = git_client.commit(
                 json.dumps(request.output_schema, indent=2),
                 git_client.output_schema_filepath,
-                "Initial output schema commit",
+                "[at bot] Initial output schema commit",
                 git_client.primary_branch_name,
             )
             config.output_schema_commit = cast(
@@ -139,7 +139,7 @@ async def upsert_config(
                 output_schema_commit = git_client.commit(
                     json.dumps(request.output_schema, indent=2),
                     git_client.output_schema_filepath,
-                    "Initial output schema commit",
+                    "[at bot] Initial output schema commit",
                     git_client.primary_branch_name,
                 )
                 config.output_schema_commit = cast(
@@ -150,7 +150,7 @@ async def upsert_config(
                     code_commit = git_client.commit(
                         cast(str, config.code),
                         git_client.code_filepath,
-                        "Initial code commit",
+                        "[at bot] Initial code commit",
                         git_client.primary_branch_name,
                     )
                     config.code_commit = cast(Column[str], code_commit)
@@ -159,7 +159,7 @@ async def upsert_config(
                 output_schema_commit = git_client.commit(
                     json.dumps(request.output_schema, indent=2),
                     git_client.output_schema_filepath,
-                    "Update output schema commit",
+                    "[at bot] Update output schema commit",
                     git_client.primary_branch_name,
                 )
                 config.output_schema_commit = cast(

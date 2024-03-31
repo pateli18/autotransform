@@ -441,13 +441,13 @@ async def generate_and_test_code(
             code_commit_uri = git_client.commit(
                 code.code,
                 git_client.code_filepath,
-                f"updated code, run_id={run_id}",
+                f"[at bot] Updated code, run_id={run_id}",
             )
             if schema_changed:
                 output_schema_commit_uri = git_client.commit(
                     json.dumps(new_schema, indent=2),
                     git_client.output_schema_filepath,
-                    f"updated schema, run_id={run_id}",
+                    f"[at bot] Updated schema, run_id={run_id}",
                 )
 
         # update processing run
