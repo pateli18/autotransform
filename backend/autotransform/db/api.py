@@ -257,5 +257,6 @@ async def get_processing_event(
             runs=cast(list, event.event_history),
             start_timestamp=cast(str, event.created_at.isoformat()),
             timestamp=cast(str, event.updated_at.isoformat()),
+            pr_uri=cast(Optional[str], event.pr_uri),
         )
     return processing_message
