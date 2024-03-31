@@ -325,6 +325,7 @@ const ConfigView = (props: {
       gitBlockHumanReview: true,
     },
   });
+  const gitUse = form.watch("gitUse");
 
   useEffect(() => {
     if (props.drawerOpen === true) {
@@ -341,6 +342,20 @@ const ConfigView = (props: {
       setParsedValue(null);
     }
   }, [props.drawerOpen]);
+
+  useEffect(() => {
+    if (gitUse === true) {
+      form.reset(
+        {
+          gitOwner: undefined,
+          gitRepoName: undefined,
+          gitPrimaryBranch: "main",
+          gitBlockHumanReview: true,
+        },
+        { keepValues: true }
+      );
+    }
+  }, [gitUse]);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setSubmitLoading(true);
