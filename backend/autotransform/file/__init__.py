@@ -1,4 +1,4 @@
-from utils import FileProviderType, settings
+from autotransform.utils import FileProviderType, settings
 
 if settings.file_provider == FileProviderType.local:
     from .local import LocalFileClient
