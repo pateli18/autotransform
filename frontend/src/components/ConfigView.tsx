@@ -22,9 +22,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
-import { getAllConfigs, getConfig, upsertConfig } from "../utils/apiCalls";
+import { getAllConfigs, upsertConfig } from "../utils/apiCalls";
 import { toast } from "sonner";
-import { PlusIcon, ReloadIcon } from "@radix-ui/react-icons";
+import { CaretSortIcon, PlusIcon, ReloadIcon } from "@radix-ui/react-icons";
 import {
   Select,
   SelectContent,
@@ -36,19 +36,42 @@ import { ConfigMetadata } from "../types";
 import { loadAndFormatDate } from "../utils/date";
 import { DataDisplay } from "./DisplayUtils";
 import { readJson } from "../utils/dataLoad";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
 
-export const formSchema = z.object({
-  name: z.string(),
-  outputSchema: z.record(z.any(), z.any()),
-  labeledData: z
-    .array(
-      z.object({
-        input: z.record(z.any(), z.any()),
-        output: z.record(z.any(), z.any()),
-      })
-    )
-    .optional(),
-});
+export const formSchema = z
+  .object({
+    name: z.string(),
+    outputSchema: z.record(z.any(), z.any()),
+    labeledData: z
+      .array(
+        z.object({
+          input: z.record(z.any(), z.any()),
+          output: z.record(z.any(), z.any()),
+        })
+      )
+      .optional(),
+    gitUse: z.boolean().optional(),
+    gitOwner: z.string().optional(),
+    gitRepoName: z.string().optional(),
+    gitPrimaryBranch: z.string().optional(),
+    gitBlockHumanReview: z.boolean().optional(),
+  })
+  .refine((data) => {
+    if (data.gitUse === true) {
+      return (
+        data.gitOwner &&
+        data.gitRepoName &&
+        data.gitPrimaryBranch &&
+        data.gitBlockHumanReview !== undefined
+      );
+    }
+    return true;
+  });
 
 const jsonValidator = (data: any) => {
   if (!data.input || !data.output) {
@@ -58,6 +81,122 @@ const jsonValidator = (data: any) => {
       )}`
     );
   }
+};
+
+const GitForm = (props: {
+  form: UseFormReturn<z.infer<typeof formSchema>>;
+}) => {
+  const gitUse = props.form.watch("gitUse");
+
+  return (
+    <Collapsible>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" className="pl-0">
+          Git Settings
+          {gitUse && <span className="text-green-500 ml-2">Enabled</span>}
+          <CaretSortIcon className="h-4 w-4" />
+          <span className="sr-only">Toggle</span>
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-4">
+        <FormField
+          control={props.form.control}
+          name="gitUse"
+          render={({ field }) => (
+            <FormItem className="space-x-3">
+              <FormLabel>Use External Git Provider</FormLabel>
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => {
+                    const value = typeof checked === "boolean" ? checked : true;
+                    field.onChange(value);
+                  }}
+                />
+              </FormControl>
+              <FormDescription>
+                If you want to store and manage the code for this service in an
+                external git provider like Github, enable this option
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {gitUse && (
+          <>
+            <FormField
+              control={props.form.control}
+              name="gitOwner"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Owner</FormLabel>
+                  <FormControl>
+                    <Input type="text" {...field} />
+                  </FormControl>
+                  <FormDescription>Your github user id</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={props.form.control}
+              name="gitRepoName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Repo Name</FormLabel>
+                  <FormControl>
+                    <Input type="text" {...field} />
+                  </FormControl>
+                  <FormDescription>Name of the github repo</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={props.form.control}
+              name="gitPrimaryBranch"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Primary Branch Name</FormLabel>
+                  <FormControl>
+                    <Input type="text" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    The branch that contains the code running in the service
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={props.form.control}
+              name="gitBlockHumanReview"
+              render={({ field }) => (
+                <FormItem className="space-x-3">
+                  <FormLabel>Await Human Review</FormLabel>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        const value =
+                          typeof checked === "boolean" ? checked : true;
+                        field.onChange(value);
+                      }}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    All code and schema changes will be blocked until a human
+                    approves the pr
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
+  );
 };
 
 export const ConfigForm = (props: {
@@ -160,6 +299,7 @@ export const ConfigForm = (props: {
             </FormItem>
           )}
         />
+        <GitForm form={form} />
       </form>
     </Form>
   );
@@ -168,7 +308,6 @@ export const ConfigForm = (props: {
 const ConfigView = (props: {
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
-  configId: string | null;
   setConfigId: (configId: string) => void;
 }) => {
   const [parsedValue, setParsedValue] = useState<Object | null>(null);
@@ -179,40 +318,45 @@ const ConfigView = (props: {
       name: undefined,
       outputSchema: undefined,
       labeledData: undefined,
+      gitUse: false,
+      gitOwner: undefined,
+      gitRepoName: undefined,
+      gitPrimaryBranch: "main",
+      gitBlockHumanReview: true,
     },
   });
 
   useEffect(() => {
-    if (props.configId === null) {
+    if (props.drawerOpen === true) {
       form.reset({
         name: undefined,
         outputSchema: undefined,
         labeledData: undefined,
+        gitUse: false,
+        gitOwner: undefined,
+        gitRepoName: undefined,
+        gitPrimaryBranch: "main",
+        gitBlockHumanReview: true,
       });
       setParsedValue(null);
-    } else {
-      getConfig(props.configId).then((data) => {
-        if (data === null) {
-          toast.error("Failed to fetch service");
-        } else {
-          form.reset({
-            name: data.name,
-            outputSchema: undefined,
-            labeledData: data.user_provided_records ?? undefined,
-          });
-          setParsedValue(data.output_schema);
-        }
-      });
     }
-  }, [props.configId]);
+  }, [props.drawerOpen]);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setSubmitLoading(true);
     const response = await upsertConfig(
-      props.configId,
+      null,
       data.name,
       data.outputSchema,
-      data.labeledData ?? null
+      data.labeledData ?? null,
+      data.gitUse
+        ? {
+            owner: data.gitOwner!,
+            repo_name: data.gitRepoName!,
+            primary_branch_name: data.gitPrimaryBranch!,
+            block_human_review: data.gitBlockHumanReview!,
+          }
+        : null
     );
     setSubmitLoading(false);
     if (response === null) {
@@ -315,7 +459,6 @@ export const ConfigViewControls = (props: {
       <ConfigView
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
-        configId={props.configId}
         setConfigId={props.setConfigId}
       />
       <div className="flex flex-wrap items-center space-x-2 py-1">

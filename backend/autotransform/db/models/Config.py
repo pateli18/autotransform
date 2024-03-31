@@ -1,4 +1,4 @@
-from sqlalchemy import VARCHAR, Column, text
+from sqlalchemy import VARCHAR, Boolean, Column, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
@@ -15,12 +15,24 @@ class ConfigModel(Base, TimestampMixin):
         server_default=text("uuid_generate_v4()"),
     )
     name = Column(VARCHAR, nullable=False)
-    code = Column(VARCHAR, nullable=True)
     previous_records = Column(JSONB, nullable=True)
     current_records = Column(JSONB, nullable=True)
-    output_schema = Column(JSONB, nullable=False)
     user_provided_records = Column(JSONB, nullable=True)
     bot_provided_records = Column(JSONB, nullable=True)
+
+    # code columns
+    code = Column(VARCHAR, nullable=True)
+    code_commit = Column(VARCHAR, nullable=True)
+
+    # output schema columns
+    output_schema = Column(JSONB, nullable=False)
+    output_schema_commit = Column(VARCHAR, nullable=True)
+
+    # git columns
+    git_owner = Column(VARCHAR, nullable=True)
+    git_repo_name = Column(VARCHAR, nullable=True)
+    git_primary_branch_name = Column(VARCHAR, nullable=True)
+    git_block_human_review = Column(Boolean, nullable=True)
 
     process_events = relationship(
         "ProcessEventsModel",

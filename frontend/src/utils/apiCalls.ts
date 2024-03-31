@@ -1,10 +1,9 @@
 import {
   Config,
   ConfigMetadata,
+  GitConfig,
   LabeledExample,
   ProcessEventMetadata,
-  ProcessingStatus,
-  UnlabeledExample,
 } from "src/types";
 import Ajax from "./Ajax";
 
@@ -32,7 +31,8 @@ export const upsertConfig = async (
   configId: string | null,
   name: string,
   outputSchema: Object,
-  labeledRecords: LabeledExample[] | null
+  labeledRecords: LabeledExample[] | null,
+  gitConfig: GitConfig | null
 ) => {
   let response = null;
   try {
@@ -44,6 +44,7 @@ export const upsertConfig = async (
         name: name,
         output_schema: outputSchema,
         user_provided_records: labeledRecords,
+        git_config: gitConfig,
       },
     });
   } catch (e) {
@@ -72,11 +73,11 @@ export const processData = async (
   return response;
 };
 
-export const stopProcess = async (configId: string) => {
+export const stopProcess = async (configId: string, runId: string) => {
   let response = false;
   try {
     await Ajax.req({
-      url: `/api/v1/process/stop/${configId}`,
+      url: `/api/v1/process/stop/${configId}/${runId}`,
       method: "POST",
       body: {},
     });
@@ -103,21 +104,11 @@ export const getAllConfigs = async () => {
 export const getConfig = async (configId: string) => {
   let response = null;
   try {
-    response = await Ajax.req<Config>({
+    response = await Ajax.req<{
+      config: Config;
+      history: ProcessEventMetadata[];
+    }>({
       url: `/api/v1/config/${configId}`,
-      method: "GET",
-    });
-  } catch (e) {
-    console.error(e);
-  }
-  return response;
-};
-
-export const getProcessHistory = async (configId: string) => {
-  let response = null;
-  try {
-    response = await Ajax.req<ProcessEventMetadata[]>({
-      url: `/api/v1/config/process-history/${configId}`,
       method: "GET",
     });
   } catch (e) {

@@ -6,7 +6,12 @@ export interface LabeledExample extends UnlabeledExample {
   output: object;
 }
 
-export type ProcessingStatus = "running" | "completed" | "failed" | "stopped";
+export type ProcessingStatus =
+  | "running"
+  | "completed"
+  | "failed"
+  | "stopped"
+  | "awaiting_review";
 
 export interface OutputSchemaError {
   record: object;
@@ -37,49 +42,28 @@ export interface ProcessingDebug {
   qa_chat: ModelChat[] | null;
 }
 
+export interface Code {
+  code: string;
+  commit: string | null;
+  markdown: string;
+}
+
+export interface OutputSchema {
+  output_schema: object;
+  commit: string | null;
+}
+
 export interface ProcessingRun {
   run_id: string;
-  output_schema: object;
-  code: string;
+  output_schema: OutputSchema;
+  code: Code;
   output_schema_errors: OutputSchemaError[];
   execution_errors: ExecutionError[];
   logic_errors: LogicError[];
   timestamp: string;
   status: ProcessingStatus;
   debug: ProcessingDebug | null;
-}
-
-export interface ProcessingMessage {
-  id: string;
-  config_id: string;
-  input_count: number;
-  output_count: number | null;
-  runs: ProcessingRun[];
-  status: ProcessingStatus;
-  timestamp: string;
-  output: object[] | null;
-}
-
-export interface ConfigMetadata {
-  config_id: string;
-  name: string;
-  last_updated: string;
-}
-
-interface Code {
-  code: string;
-  markdown: string;
-}
-
-export interface Config {
-  id: string;
-  name: string;
-  code: Code | null;
-  output_schema: object;
-  previous_records: UnlabeledExample[] | null;
-  current_records: UnlabeledExample[] | null;
-  user_provided_records: LabeledExample[] | null;
-  bot_provided_records: LabeledExample[] | null;
+  commit_uri: string | null;
 }
 
 export interface ProcessEventMetadata {
@@ -89,6 +73,36 @@ export interface ProcessEventMetadata {
   output_count: number | null;
   status: ProcessingStatus;
   timestamp: string;
+  pr_uri: string | null;
+}
+
+export interface ProcessingMessage extends ProcessEventMetadata {
+  runs: ProcessingRun[];
+}
+
+export interface ConfigMetadata {
+  config_id: string;
+  name: string;
+  last_updated: string;
+}
+
+export interface GitConfig {
+  owner: string;
+  repo_name: string;
+  primary_branch_name: string;
+  block_human_review: boolean;
+}
+
+export interface Config {
+  config_id: string;
+  name: string;
+  code: Code | null;
+  output_schema: OutputSchema;
+  previous_records: UnlabeledExample[] | null;
+  current_records: UnlabeledExample[] | null;
+  user_provided_records: LabeledExample[] | null;
+  bot_provided_records: LabeledExample[] | null;
+  git_config: GitConfig | null;
 }
 
 export interface ProcessingEvent {

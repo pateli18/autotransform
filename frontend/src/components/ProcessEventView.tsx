@@ -3,24 +3,29 @@ import {
   ExecutionError,
   LogicError,
   ModelChat,
+  OutputSchema,
   OutputSchemaError,
   ProcessingDebug,
   ProcessingEvent,
   ProcessingRun,
   ProcessingStatus,
 } from "../types";
-import { ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  StopIcon,
+} from "@radix-ui/react-icons";
 import JsonView from "react18-json-view";
 import ReactJsonViewCompare from "react-json-view-compare";
 import { useEffect, useState } from "react";
-import { CustomMarkdown, DataDisplay, StatusDisplay } from "./DisplayUtils";
+import {
+  CodeView,
+  CustomMarkdown,
+  DataDisplay,
+  StatusDisplay,
+} from "./DisplayUtils";
 import { loadAndFormatDate } from "../utils/date";
 import { Separator } from "@/components/ui/separator";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   Accordion,
   AccordionContent,
@@ -28,21 +33,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useNavigate } from "react-router-dom";
+import { stopProcess } from "../utils/apiCalls";
 
-const CodeView = (props: { code: string }) => {
-  return (
-    <>
-      <h3 className="text-lg font-medium">Code</h3>
-      <CustomMarkdown content={props.code} />
-    </>
-  );
-};
-
-const OutputSchemaView = (props: { schema: Object }) => {
+const OutputSchemaView = (props: { schema: OutputSchema }) => {
   return (
     <>
       <h3 className="text-lg font-medium">Output Schema</h3>
-      <JsonView src={props.schema} />
+      <JsonView src={props.schema.output_schema} />
     </>
   );
 };
@@ -72,6 +69,11 @@ const ProcessStatus = (props: {
     case "stopped":
       message = (
         <div className="text-xs text-gray-500">{`Stopped: ${fmtTimestamp}`}</div>
+      );
+      break;
+    case "awaiting_review":
+      message = (
+        <div className="text-xs text-yellow-500">{`Awaiting review: ${fmtTimestamp}`}</div>
       );
       break;
   }
@@ -163,7 +165,6 @@ const DebugChatView = (props: { chat: ModelChat[]; title: string }) => {
 };
 
 const DebugRunView = (props: { processingDebug: ProcessingDebug }) => {
-  console.log(props.processingDebug);
   return (
     <>
       <h3 className="text-lg font-medium">Debug</h3>
@@ -267,6 +268,12 @@ export const ProcessEventView = (props: {
     }
   }, [props.processingEvent.message.runs.length]);
 
+  const onClickStop = async () => {
+    if (props.processingEvent.message.status === "running") {
+      await stopProcess(props.configId, props.processingEvent.message.id);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <Button
@@ -278,7 +285,15 @@ export const ProcessEventView = (props: {
       <div className="text-lg font-medium">
         {props.processingEvent.message.id}
       </div>
-      <StatusDisplay status={props.processingEvent.message.status} />
+      <div className="flex items-center space-x-2">
+        <StatusDisplay status={props.processingEvent.message.status} />
+        {props.processingEvent.message.status === "running" && (
+          <Button variant="destructive" onClick={onClickStop}>
+            <StopIcon className="mr-2 h-4 w-4" />
+            Stop
+          </Button>
+        )}
+      </div>
       <div className="text-xs text-muted-foreground">
         {loadAndFormatDate(props.processingEvent.message.timestamp)}
       </div>

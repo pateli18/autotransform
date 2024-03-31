@@ -5,6 +5,7 @@ fastapi
 httpx
 jsonschema
 pydantic-settings
+PyGithub
 sqlalchemy[asyncio]
 sse-starlette
 uvicorn

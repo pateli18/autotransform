@@ -23,6 +23,7 @@ class ProcessEventsModel(Base, TimestampMixin):
     output_count = Column(Integer, nullable=True)
     status = Column(VARCHAR, nullable=False)
     event_history = Column(JSONB, nullable=False)
+    pr_uri = Column(VARCHAR, nullable=True)
 
     config = relationship(
         "ConfigModel",

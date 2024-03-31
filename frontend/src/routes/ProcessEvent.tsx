@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ProcessingEvent, ProcessingMessage } from "../types";
+import { ProcessingEvent } from "../types";
 import { ProcessEventView } from "../components/ProcessEventView";
 import { Layout } from "../components/Layout";
 import { useParams } from "react-router-dom";

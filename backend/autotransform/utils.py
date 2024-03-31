@@ -1,11 +1,20 @@
 import logging.config
+from enum import Enum
+from typing import Optional
 
 from pydantic_settings import BaseSettings
+
+
+class GitType(str, Enum):
+    github = "github"
 
 
 class Settings(BaseSettings):
     openai_api_key: str
     postgres_uri: str
+    git_provider: Optional[GitType] = None
+    git_provider_secret: Optional[str] = None
+    base_url: str = "http://localhost:8000"
     file_save_path: str = "/app-data/"
     processing_debug: bool = False
     log_level: str = "INFO"

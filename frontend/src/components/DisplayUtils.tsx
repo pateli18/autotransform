@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { DownloadIcon } from "@radix-ui/react-icons";
 import JsonView from "react18-json-view";
-import { ProcessingStatus } from "src/types";
+import { Code, ProcessingStatus } from "src/types";
 import { buttonVariants } from "@/components/ui/button";
 import Markdown from "react-markdown";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -20,7 +20,10 @@ export const DataDisplay = (props: {
   return (
     <div className="space-y-5">
       <h3 className="text-lg font-medium">
-        {props.title} <Badge>{props.recordCount} Records</Badge>{" "}
+        {props.title}{" "}
+        <Badge>
+          {props.recordCount} {props.recordCount > 1 ? "Records" : "Record"}
+        </Badge>{" "}
         {props.downloadItems && (
           <a
             href={`/api/v1/data/export/${props.downloadItems.configId}/${props.downloadItems.runId}/${props.downloadItems.recordType}`}
@@ -45,6 +48,8 @@ export const StatusDisplay = (props: { status: ProcessingStatus }) => {
       return <Badge className="bg-gray-500">Stopped</Badge>;
     case "failed":
       return <Badge className="bg-red-500">Failed</Badge>;
+    case "awaiting_review":
+      return <Badge className="bg-yellow-500">Awaiting Review</Badge>;
   }
 };
 
@@ -73,5 +78,20 @@ export const CustomMarkdown = (props: { content: string }) => {
         },
       }}
     />
+  );
+};
+
+export const CodeView = (props: { code: Code }) => {
+  let codeToDisplay = props.code.code;
+  // check if ```python in codeToDisplay, if not wrap it in ```python\n\n
+  if (!codeToDisplay.includes("```python")) {
+    codeToDisplay = "```python\n" + codeToDisplay + "\n```";
+  }
+
+  return (
+    <>
+      <h3 className="text-lg font-medium">Code</h3>
+      <CustomMarkdown content={codeToDisplay} />
+    </>
   );
 };

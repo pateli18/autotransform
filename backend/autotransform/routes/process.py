@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import random
 import re
@@ -17,10 +18,12 @@ from autotransform.autotransform_types import (
     DataType,
     ExampleRecord,
     ExecutionError,
+    GitClient,
     LogicError,
     ModelChat,
     ModelChatType,
     OpenAiChatInput,
+    OutputSchema,
     OutputSchemaError,
     ProcessEventMetadata,
     ProcessingConfig,
@@ -30,14 +33,16 @@ from autotransform.autotransform_types import (
     ProcessingStatus,
 )
 from autotransform.db.api import (
+    get_latest_config_event,
     get_processing_config,
-    get_processing_message,
+    get_processing_event,
     insert_processing_event,
     save_processing_config,
     update_processing_event,
 )
 from autotransform.db.base import async_session_scope, get_session
 from autotransform.file_api import read_data_partial, save_data
+from autotransform.git import get_git_client, refresh_config_from_git
 from autotransform.model import (
     model_client,
     openai_stream_response_generator,
@@ -266,7 +271,7 @@ code_output = run_code(code_input)
 
 def run_code(
     code: Code,
-    output_schema: dict,
+    output_schema: OutputSchema,
     record: dict,
 ) -> tuple[dict, Optional[str], Optional[str]]:
     output = {}
@@ -275,7 +280,7 @@ def run_code(
     try:
         output = _execute_code(code, record)
         try:
-            jsonschema.validate(output, output_schema)
+            jsonschema.validate(output, output_schema.output_schema)
         except jsonschema.ValidationError as e:
             output_schema_error = str(e)
     except Exception as e:
@@ -339,6 +344,7 @@ async def run_checks(
     passed, error_report = create_error_report(
         output_schema_errors, execution_errors, logic_errors
     )
+    logger.info("Checks complete for config %s", config_id)
     return passed, error_report
 
 
@@ -368,7 +374,8 @@ async def update_schema(
 async def generate_and_test_code(
     config_id: UUID,
     config: ProcessingConfig,
-) -> Code:
+    git_client: Optional[GitClient],
+) -> ProcessingConfig:
     code_chat = create_code_gen_prompt(config)
     schema_chat = None
     error_report = None
@@ -396,7 +403,7 @@ async def generate_and_test_code(
                 schema_changed = True
 
             # reset code chat if schema is changed
-            config.output_schema = new_schema
+            config.output_schema = OutputSchema(output_schema=new_schema)
             code_chat = create_code_gen_prompt(config)
 
         # ensure that once a schema has changed it shows up in all run displays
@@ -404,7 +411,7 @@ async def generate_and_test_code(
             async with processing_message_queue_lock:
                 processing_message_queue[config_id].add_run(
                     run_id,
-                    output_schema=config.output_schema,
+                    output_schema=config.output_schema.output_schema,
                 )
 
         # generate code and checks
@@ -427,18 +434,40 @@ async def generate_and_test_code(
             )
         )
 
+        # commit to git
+        code_commit_uri = None
+        output_schema_commit_uri = None
+        if git_client is not None:
+            code_commit_uri = git_client.commit(
+                code.code,
+                git_client.code_filepath,
+                f"updated code, run_id={run_id}",
+            )
+            if schema_changed:
+                output_schema_commit_uri = git_client.commit(
+                    json.dumps(new_schema, indent=2),
+                    git_client.output_schema_filepath,
+                    f"updated schema, run_id={run_id}",
+                )
+
         # update processing run
         async with processing_message_queue_lock:
-            processing_message_queue[config_id].add_run(
+            processing_message = processing_message_queue[config_id]
+            processing_message.add_run(
                 run_id,
+                code_commit_uri=code_commit_uri,
+                output_schema_commit_uri=output_schema_commit_uri,
                 processing_debug=processing_debug,
             )
             if not passed:
-                processing_message_queue[config_id].run_failed()
+                processing_message.run_failed()
 
         if not passed and attempts >= MAX_PROCESSING_ATTEMPTS:
             raise MaxProcessAttemptsException()
-    return code
+
+    config.code = code
+    logger.info("Code generation complete for config %s", config_id)
+    return config
 
 
 async def qa_code_output(
@@ -471,7 +500,7 @@ def _check_schema_execution_errors(
     execution_error: Optional[str],
     record: BaseRecord,
     config_id: UUID,
-    code: str,
+    code: Code,
 ) -> None:
     if output_schema_error is not None or execution_error is not None:
         output_schema_errors = (
@@ -489,7 +518,7 @@ def _check_schema_execution_errors(
         logger.info("Adding run %s for schema or execution error", run_id)
         processing_message_queue[config_id].add_run(
             run_id,
-            code=code,
+            code=code.code,
             output_schema_errors=output_schema_errors,
             execution_errors=execution_errors,
         )
@@ -515,7 +544,10 @@ async def _check_logic_error(
         if config.bot_provided_records is None:
             config.bot_provided_records = []
         # remove from current records
-        if config.current_records is not None:
+        if (
+            config.current_records is not None
+            and record in config.current_records
+        ):
             config.current_records.remove(record)
 
         config.bot_provided_records.append(
@@ -529,7 +561,7 @@ async def _check_logic_error(
             logger.info("Adding run %s for logic error", run_id)
             processing_message_queue[config.config_id].add_run(
                 run_id,
-                code=cast(Code, config.code).markdown,
+                code=cast(Code, config.code).code,
                 logic_errors=[
                     LogicError(
                         record=record,
@@ -547,13 +579,19 @@ async def _check_logic_error(
 
 
 async def execute_data_processing(
-    config: ProcessingConfig, data: DataToProcess
+    config: ProcessingConfig, data: DataToProcess, event_id: UUID
 ) -> None:
+    if config.git_config is not None:
+        git_client = get_git_client(
+            config.config_id, config.name, config.git_config, event_id
+        )
+    else:
+        git_client = None
+
     try:
         if config.code is None:
-            config.code = await generate_and_test_code(
-                data.config_id,
-                config,
+            config = await generate_and_test_code(
+                data.config_id, config, git_client
             )
 
         # execute code
@@ -565,14 +603,14 @@ async def execute_data_processing(
             config.add_current_record(record)
             try:
                 output, output_schema_error, execution_error = run_code(
-                    config.code, config.output_schema, record.input
+                    cast(Code, config.code), config.output_schema, record.input
                 )
                 _check_schema_execution_errors(
                     output_schema_error,
                     execution_error,
                     record,
                     config.config_id,
-                    config.code.markdown,
+                    cast(Code, config.code),
                 )
                 await _check_logic_error(
                     record,
@@ -585,12 +623,11 @@ async def execute_data_processing(
                 outputs.append(output)
                 record_to_process_index += 1
             except Exception as e:
-                if isinstance(e, MaxProcessAttemptsException):
-                    raise e
                 logger.info("Error processing record %s: %s", record, e)
-                config.code = await generate_and_test_code(
+                config = await generate_and_test_code(
                     data.config_id,
                     config,
+                    git_client,
                 )
                 record_to_process_index = 0
         passed = True
@@ -598,18 +635,33 @@ async def execute_data_processing(
         logger.exception("Error processing data")
         passed = False
 
+    logger.info("Processing complete for config %s", data.config_id)
+    # create and merge pr
+    pr_uri = None
+    merged = False
+    if git_client is not None:
+        pr_uri, merged = git_client.complete(passed)
+
+    # update processing message
     async with processing_message_queue_lock:
+        processing_message = processing_message_queue[data.config_id]
+        processing_message.pr_uri = pr_uri
         if passed:
-            processing_message_queue[data.config_id].complete(outputs=outputs)
+            if git_client is not None and not merged:
+                processing_message.await_review()
+            else:
+                processing_message.complete(outputs=outputs)
             await save_data(
                 outputs,
                 data.config_id,
-                processing_message_queue[data.config_id].id,
+                processing_message.id,
                 DataType.output,
             )
         else:
-            processing_message_queue[data.config_id].fail()
+            processing_message.fail()
 
+    logger.info("Processing event complete for config %s", data.config_id)
+    # save processing config and update processing event in db
     async with async_session_scope() as db:
         if passed:
             await save_processing_config(data.config_id, config, db)
@@ -641,32 +693,60 @@ async def processing_start(
             detail="Processing already running",
         )
 
-    task_manager.add_task(
-        str(request.config_id),
-        execute_data_processing,
-        config,
-        request,
+    # check status before processing
+    previous_event = await get_latest_config_event(
+        request.config_id,
+        db,
     )
 
-    event = await insert_processing_event(
+    # refresh git
+    if config.git_config is not None:
+        config, previous_event = await refresh_config_from_git(
+            config,
+            previous_event,
+            db,
+        )
+
+    if previous_event is not None:
+        status = cast(ProcessingStatus, previous_event.status)
+        if status == ProcessingStatus.running:
+            raise HTTPException(
+                status_code=409,
+                detail="Service is already processing",
+            )
+        elif status == ProcessingStatus.awaiting_review:
+            raise HTTPException(
+                status_code=409,
+                detail="Service is awaiting review",
+            )
+
+    new_event = await insert_processing_event(
         config_id=request.config_id,
         input_count=len(request.records),
         db=db,
     )
 
+    task_manager.add_task(
+        str(request.config_id),
+        execute_data_processing,
+        config,
+        request,
+        new_event.id,
+    )
+
     async with processing_message_queue_lock:
         processing_message_queue[request.config_id] = ProcessingMessage(
-            id=cast(UUID, event.id),
-            config_id=cast(UUID, event.config_id),
+            id=cast(UUID, new_event.id),
+            config_id=cast(UUID, new_event.config_id),
             runs=[],
-            input_count=cast(int, event.input_count),
-            status=cast(ProcessingStatus, event.status),
+            input_count=cast(int, new_event.input_count),
+            status=cast(ProcessingStatus, new_event.status),
         )
 
     await save_data(
         request.records,
         request.config_id,
-        cast(UUID, event.id),
+        cast(UUID, new_event.id),
         DataType.input,
     )
 
@@ -675,15 +755,19 @@ async def processing_start(
     return processing_message_queue[request.config_id].metadata
 
 
-@router.post("/stop/{config_id}", status_code=204)
-async def processing_stop(config_id: UUID):
+@router.post("/stop/{config_id}/{run_id}", status_code=204)
+async def processing_stop(config_id: UUID, run_id: UUID):
     task_manager.cancel_task(str(config_id))
     async with processing_message_queue_lock:
-        processing_message_queue[config_id].stop()
+        if config_id in processing_message_queue:
+            processing_message_queue[config_id].stop()
 
     async with async_session_scope() as db:
-        await update_processing_event(processing_message_queue[config_id], db)
-        await db.commit()
+        processing_event = await get_processing_event(config_id, run_id, db)
+        if processing_event:
+            processing_event.stop()
+            await update_processing_event(processing_event, db)
+            await db.commit()
     return Response(status_code=204)
 
 
@@ -705,7 +789,7 @@ async def processing_status(
                     processing_message is None
                     or processing_message.id != run_id
                 ):
-                    processing_message = await get_processing_message(
+                    processing_message = await get_processing_event(
                         config_id, run_id, db
                     )
             if processing_message is not None:

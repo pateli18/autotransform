@@ -1,20 +1,19 @@
 import { Config } from "src/types";
 import { useEffect, useState } from "react";
-import { CustomMarkdown, DataDisplay } from "./DisplayUtils";
+import { CodeView, CustomMarkdown, DataDisplay } from "./DisplayUtils";
 import { ConfigForm, formSchema } from "./ConfigView";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getConfig, upsertConfig } from "../utils/apiCalls";
+import { upsertConfig } from "../utils/apiCalls";
 import { toast } from "sonner";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { Separator } from "@/components/ui/separator";
 
-export const ProcessConfigurationView = (props: { configId: string }) => {
+export const ProcessConfigurationView = (props: { config: Config }) => {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [parsedValue, setParsedValue] = useState<Object | null>(null);
-  const [config, setConfig] = useState<Config | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -22,37 +21,43 @@ export const ProcessConfigurationView = (props: { configId: string }) => {
       name: undefined,
       outputSchema: undefined,
       labeledData: undefined,
+      gitUse: false,
+      gitOwner: undefined,
+      gitRepoName: undefined,
+      gitPrimaryBranch: "main",
+      gitBlockHumanReview: true,
     },
   });
 
   useEffect(() => {
-    getConfig(props.configId).then((data) => {
-      if (data === null) {
-        toast.error("Failed to fetch service");
-      } else {
-        setConfig(data);
-      }
+    form.reset({
+      name: props.config.name,
+      outputSchema: undefined,
+      labeledData: props.config.user_provided_records ?? undefined,
+      gitUse: props.config.git_config !== null,
+      gitOwner: props.config.git_config?.owner ?? undefined,
+      gitRepoName: props.config.git_config?.repo_name ?? undefined,
+      gitPrimaryBranch: props.config.git_config?.primary_branch_name ?? "main",
+      gitBlockHumanReview: props.config.git_config?.block_human_review ?? true,
     });
-  }, [props.configId]);
-
-  useEffect(() => {
-    if (config !== null) {
-      form.reset({
-        name: config.name,
-        outputSchema: undefined,
-        labeledData: config.user_provided_records ?? undefined,
-      });
-      setParsedValue(config.output_schema);
-    }
-  }, [config]);
+    setParsedValue(props.config.output_schema.output_schema);
+  }, [props.config.config_id]);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setSubmitLoading(true);
     const response = await upsertConfig(
-      props.configId,
+      props.config.config_id,
       data.name,
       data.outputSchema,
-      data.labeledData ?? null
+      data.labeledData ?? null,
+      data.gitUse
+        ? {
+            owner: data.gitOwner!,
+            repo_name: data.gitRepoName!,
+            primary_branch_name: data.gitPrimaryBranch!,
+            block_human_review: data.gitBlockHumanReview!,
+          }
+        : null
     );
     setSubmitLoading(false);
     if (response === null) {
@@ -74,40 +79,35 @@ export const ProcessConfigurationView = (props: { configId: string }) => {
         Update
         {submitLoading && <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />}
       </Button>
-      {config && (
-        <>
-          <Separator className="mt-5 mb-5" />
-          <h3 className="text-lg font-semibold">Automatic Values</h3>
-          {config.code && (
-            <>
-              <h3 className="text-lg font-medium">Code</h3>
-              <CustomMarkdown content={config.code.markdown} />
-            </>
+      <>
+        <Separator className="mt-5 mb-5" />
+        <h3 className="text-lg font-semibold">Automatic Values</h3>
+        {props.config.code && <CodeView code={props.config.code} />}
+        {props.config.bot_provided_records &&
+          props.config.bot_provided_records.length > 0 && (
+            <DataDisplay
+              title="Bot Provided Records"
+              recordCount={(props.config.bot_provided_records ?? []).length}
+              dataToDisplay={props.config.bot_provided_records ?? []}
+            />
           )}
-          {config.bot_provided_records &&
-            config.bot_provided_records.length > 0 && (
-              <DataDisplay
-                title="Bot Provided Records"
-                recordCount={(config.bot_provided_records ?? []).length}
-                dataToDisplay={config.bot_provided_records ?? []}
-              />
-            )}
-          {config.current_records && config.current_records.length > 0 && (
+        {props.config.current_records &&
+          props.config.current_records.length > 0 && (
             <DataDisplay
               title="Current Records"
-              recordCount={(config.current_records ?? []).length}
-              dataToDisplay={config.current_records ?? []}
+              recordCount={(props.config.current_records ?? []).length}
+              dataToDisplay={props.config.current_records ?? []}
             />
           )}
-          {config.previous_records && config.previous_records.length > 0 && (
+        {props.config.previous_records &&
+          props.config.previous_records.length > 0 && (
             <DataDisplay
               title="Historical Records"
-              recordCount={(config.previous_records ?? []).length}
-              dataToDisplay={config.previous_records ?? []}
+              recordCount={(props.config.previous_records ?? []).length}
+              dataToDisplay={props.config.previous_records ?? []}
             />
           )}
-        </>
-      )}
+      </>
     </div>
   );
 };

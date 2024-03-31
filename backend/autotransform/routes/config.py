@@ -12,12 +12,11 @@ from sqlalchemy.ext.asyncio import async_scoped_session
 
 from autotransform.autotransform_types import (
     ConfigMetadata,
+    ConfigResponse,
     ExampleRecord,
     ModelChat,
     ModelChatType,
     OpenAiChatInput,
-    ProcessEventMetadata,
-    ProcessingConfig,
     UpsertConfig,
 )
 from autotransform.db.api import (
@@ -26,6 +25,7 @@ from autotransform.db.api import (
 )
 from autotransform.db.base import get_session
 from autotransform.db.models import ConfigModel
+from autotransform.git import get_git_client, refresh_config_from_git
 from autotransform.model import model_client, send_openai_request
 
 logger = logging.getLogger(__name__)
@@ -64,13 +64,44 @@ async def upsert_config(
             )
 
     if request.config_id is None:
-        config_id = await db.execute(
-            insert(ConfigModel).returning(ConfigModel.id),
+        values_to_insert = request.model_dump(
+            exclude={"config_id", "git_config"}
+        )
+        if request.git_config is not None:
+            values_to_insert["git_owner"] = request.git_config.owner
+            values_to_insert["git_repo_name"] = request.git_config.repo_name
+            values_to_insert["git_primary_branch_name"] = (
+                request.git_config.primary_branch_name
+            )
+            values_to_insert["git_block_human_review"] = (
+                request.git_config.block_human_review
+            )
+
+        config_raw = await db.execute(
+            insert(ConfigModel).returning(ConfigModel),
             [
-                request.model_dump(exclude={"config_id"}),
+                values_to_insert,
             ],
         )
-        config_id = config_id.scalars().one()
+        config = config_raw.scalars().one()
+        config_id = cast(UUID, config.id)
+        if request.git_config is not None:
+            git_client = get_git_client(
+                config_id,
+                cast(str, config.name),
+                request.git_config,
+                None,
+            )
+            output_schema_commit = git_client.commit(
+                json.dumps(request.output_schema, indent=2),
+                git_client.output_schema_filepath,
+                "Initial output schema commit",
+                git_client.primary_branch_name,
+            )
+            config.output_schema_commit = cast(
+                Column[str], output_schema_commit
+            )
+
     else:
         config_id = request.config_id
         config_result = await db.execute(
@@ -91,20 +122,63 @@ async def upsert_config(
                 for record in request.user_provided_records or []
             ],
         )
+        if request.git_config is None:
+            config.git_owner = cast(Column, None)
+            config.git_repo_name = cast(Column, None)
+            config.git_primary_branch_name = cast(Column, None)
+            config.git_block_human_review = cast(Column, None)
+        else:
+            # check if user just added git config, if so add output schema and code
+            git_client = get_git_client(
+                config_id,
+                cast(str, config.name),
+                request.git_config,
+                None,
+            )
+            if config.git_owner is None:
+                output_schema_commit = git_client.commit(
+                    json.dumps(request.output_schema, indent=2),
+                    git_client.output_schema_filepath,
+                    "Initial output schema commit",
+                    git_client.primary_branch_name,
+                )
+                config.output_schema_commit = cast(
+                    Column[str], output_schema_commit
+                )
+
+                if config.code is not None:
+                    code_commit = git_client.commit(
+                        cast(str, config.code),
+                        git_client.code_filepath,
+                        "Initial code commit",
+                        git_client.primary_branch_name,
+                    )
+                    config.code_commit = cast(Column[str], code_commit)
+            # check if schema has changed, if so update primary branch
+            elif cast(dict, config.output_schema) != request.output_schema:
+                output_schema_commit = git_client.commit(
+                    json.dumps(request.output_schema, indent=2),
+                    git_client.output_schema_filepath,
+                    "Update output schema commit",
+                    git_client.primary_branch_name,
+                )
+                config.output_schema_commit = cast(
+                    Column[str], output_schema_commit
+                )
+
+            config.git_owner = cast(Column[str], request.git_config.owner)
+            config.git_repo_name = cast(
+                Column[str], request.git_config.repo_name
+            )
+            config.git_primary_branch_name = cast(
+                Column[str], request.git_config.primary_branch_name
+            )
+            config.git_block_human_review = cast(
+                Column[bool], request.git_config.block_human_review
+            )
 
     await db.commit()
     return UpsertConfigResponse(config_id=config_id)
-
-
-@router.get(
-    "/process-history/{config_id}", response_model=list[ProcessEventMetadata]
-)
-async def get_process_history(
-    config_id: UUID,
-    db: async_scoped_session = Depends(get_session),
-) -> list[ProcessEventMetadata]:
-    event_history = await get_processing_event_history(config_id, db)
-    return event_history
 
 
 @router.get("/all", response_model=list[ConfigMetadata])
@@ -123,19 +197,27 @@ async def get_all_configs(
     ]
 
 
-@router.get("/{config_id}", response_model=ProcessingConfig)
+@router.get("/{config_id}", response_model=ConfigResponse)
 async def get_config(
     config_id: UUID,
     db: async_scoped_session = Depends(get_session),
-) -> ProcessingConfig:
+) -> ConfigResponse:
     config = await get_processing_config(config_id, db)
     if config is None:
         raise HTTPException(
             status_code=404,
             detail="Config not found",
         )
+    event_history = await get_processing_event_history(config_id, db)
 
-    return config
+    if config.git_config is not None:
+        config, latest_event = await refresh_config_from_git(
+            config, event_history[0] if len(event_history) > 0 else None, db
+        )
+        if len(event_history) > 0 and latest_event is not None:
+            event_history[0] = latest_event
+
+    return ConfigResponse(config=config, history=event_history)
 
 
 def create_parse_schema_prompt(input_schema: str) -> list[ModelChat]:

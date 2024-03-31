@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { ProcessEventMetadata } from "../types";
+import { Config, ProcessEventMetadata } from "../types";
 import { ConfigViewControls } from "../components/ConfigView";
 import { Layout } from "../components/Layout";
 import { ProcessHistoryView } from "../components/ProcessHistoryView";
-import { getProcessHistory, processData, stopProcess } from "../utils/apiCalls";
+import { getConfig, processData, stopProcess } from "../utils/apiCalls";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +48,7 @@ const EnterDataDialog = (props: {
     React.SetStateAction<ProcessEventMetadata[]>
   >;
 }) => {
+  console.log(props.configId);
   const navigate = useNavigate();
   const [submitLoading, setSubmitLoading] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -147,21 +148,24 @@ const EnterDataDialog = (props: {
 export const ProcessHistoryRoute = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [configId, setConfigId] = useState<string | null>(null);
+  const [config, setConfig] = useState<Config | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [processEvents, setProcessEvents] = useState<ProcessEventMetadata[]>(
     []
   );
-  const configRunning = processEvents.some(
-    (event) => event.status === "running"
-  );
+  const latestRun = processEvents.length > 0 ? processEvents[0] : null;
 
   useEffect(() => {
     if (configId !== null) {
-      getProcessHistory(configId).then((data) => {
+      getConfig(configId).then((data) => {
         if (data === null) {
-          toast.error("Failed to fetch history");
+          toast.error("Failed to fetch config");
+          setConfig(null);
+          setConfigId(null);
+          setSearchParams({});
         } else {
-          setProcessEvents(data);
+          setProcessEvents(data.history);
+          setConfig(data.config);
         }
       });
       if (configId !== searchParams.get("configId")) {
@@ -179,43 +183,48 @@ export const ProcessHistoryRoute = () => {
     }
   }, [searchParams]);
 
+  const onClickStop = async () => {
+    if (latestRun?.status === "running" && configId) {
+      await stopProcess(configId, latestRun.id);
+      // reload page
+      window.location.reload();
+    }
+  };
+
   return (
     <Layout>
       <ConfigViewControls configId={configId} setConfigId={setConfigId} />
-      {configId && (
+      {config !== null && (
         <EnterDataDialog
           dialogOpen={dialogOpen}
           setDialogOpen={setDialogOpen}
-          configId={configId}
+          configId={config.config_id}
           setProcessEvents={setProcessEvents}
         />
       )}
       <Tabs defaultValue="history">
-        <div className="space-x-2">
+        <div className="space-x-2 flex items-center">
           <TabsList>
             <TabsTrigger value="history">History</TabsTrigger>
-            {configId !== null && (
+            {config !== null && (
               <TabsTrigger value="config">Configure</TabsTrigger>
             )}
           </TabsList>
           {configId !== null && (
             <Button
-              disabled={configRunning}
+              disabled={latestRun?.status === "running"}
               onClick={() => setDialogOpen(true)}
             >
-              {configRunning ? "Processing" : "Start Processing"}
-              {configRunning && (
+              {latestRun?.status === "running"
+                ? "Processing"
+                : "Start Processing"}
+              {latestRun?.status === "running" && (
                 <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />
               )}
             </Button>
           )}
-          {configRunning && configId && (
-            <Button
-              onClick={() => {
-                stopProcess(configId);
-              }}
-              variant="destructive"
-            >
+          {latestRun?.status === "running" && configId && (
+            <Button onClick={onClickStop} variant="destructive">
               <StopIcon className="mr-2 h-4 w-4" />
               Stop
             </Button>
@@ -234,9 +243,9 @@ export const ProcessHistoryRoute = () => {
             </Alert>
           )}
         </TabsContent>
-        {configId !== null && (
+        {config !== null && (
           <TabsContent value="config">
-            <ProcessConfigurationView configId={configId!} />
+            <ProcessConfigurationView config={config} />
           </TabsContent>
         )}
       </Tabs>

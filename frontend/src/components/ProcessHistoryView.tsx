@@ -19,7 +19,12 @@ const ProcessEventMetadataView = (props: { event: ProcessEventMetadata }) => {
       <span className="text-muted-foreground">
         {loadAndFormatDate(props.event.timestamp)}
       </span>
-      <Badge variant="secondary">{props.event.output_count} Records</Badge>
+      {props.event.output_count && (
+        <Badge variant="secondary">
+          {props.event.output_count}{" "}
+          {props.event.output_count > 1 ? "Records" : "Record"}
+        </Badge>
+      )}
     </div>
   );
 };
