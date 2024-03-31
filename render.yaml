@@ -1,0 +1,33 @@
+previewsEnabled: true
+services:
+  - type: web
+    name: autotransform
+    runtime: docker
+    repo: https://github.com/pateli18/autotransform
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    buildFilter:
+      ignoredPaths:
+        - .vscode/**
+        - docker-compose*
+    envVars:
+      - key: POSTGRES_URI
+        fromDatabase:
+          name: autotransformdb
+          property: connectionString
+      - key: WEB_CONCURRENCY
+        value: 5
+        previewValue: 1
+      - key: ENVIRONMENT
+        value: prod
+      - key: PROCESSING_DEBUG
+        value: false
+      - key: GIT_PROVIDER
+        value: github
+      - key: GIT_PROVIDER_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+databases:
+  - name: autotransformdb
+    postgresMajorVersion: "15"
