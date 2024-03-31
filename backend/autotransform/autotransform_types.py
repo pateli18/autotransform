@@ -423,11 +423,12 @@ class ProcessingMessage(ProcessEventMetadata):
     def stop(self) -> None:
         self._cleanup(ProcessingStatus.stopped)
 
-    def await_review(self) -> None:
+    def await_review(self, output_count: int) -> None:
+        self.output_count = output_count
         self._cleanup(ProcessingStatus.awaiting_review)
 
-    def complete(self, outputs: list[dict]) -> None:
-        self.output_count = len(outputs)
+    def complete(self, output_count: int) -> None:
+        self.output_count = output_count
         self._cleanup(ProcessingStatus.completed)
 
     def fail(self) -> None:

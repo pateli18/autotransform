@@ -648,9 +648,9 @@ async def execute_data_processing(
         processing_message.pr_uri = pr_uri
         if passed:
             if git_client is not None and not merged:
-                processing_message.await_review()
+                processing_message.await_review(output_count=len(outputs))
             else:
-                processing_message.complete(outputs=outputs)
+                processing_message.complete(output_count=len(outputs))
             await save_data(
                 outputs,
                 data.config_id,
