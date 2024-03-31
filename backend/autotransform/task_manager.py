@@ -22,6 +22,8 @@ class TaskManager:
             await function(*args, **kwargs)
         except asyncio.CancelledError:
             logger.info("Task cancelled")
+        except Exception:
+            logger.exception(f"Task {task_id} failed")
         del self.tasks[task_id]
 
     def add_task(
