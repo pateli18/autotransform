@@ -32,6 +32,7 @@ services:
       - "8000"
       - --reload
     environment:
+      ENVIRONMENT: dev
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GIT_PROVIDER: github
       GIT_PROVIDER_SECRET: ${GIT_PROVIDER_SECRET}

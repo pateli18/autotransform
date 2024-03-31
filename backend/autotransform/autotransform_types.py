@@ -243,7 +243,7 @@ class UpsertConfig(BaseModel):
     config_id: Optional[UUID] = None
     name: str
     output_schema: dict
-    user_provided_records: Optional[list[ExampleRecord]]
+    user_provided_records: Optional[list[ExampleRecord]] = None
     git_config: Optional[GitConfig] = None
 
 

@@ -9,9 +9,15 @@ class GitType(str, Enum):
     github = "github"
 
 
+class Environment(str, Enum):
+    dev = "dev"
+    prod = "prod"
+
+
 class Settings(BaseSettings):
     openai_api_key: str
     postgres_uri: str
+    environment: Environment = Environment.dev
     git_provider: Optional[GitType] = None
     git_provider_secret: Optional[str] = None
     base_url: str = "http://localhost:8000"

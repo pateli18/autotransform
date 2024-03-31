@@ -13,7 +13,7 @@ export const ProcessEventRoute = () => {
   useEffect(() => {
     if (configId && runId) {
       eventSource = new EventSource(
-        `/api/v1/process/status/${configId}/${runId}`
+        `/api/v1/process/status-ui/${configId}/${runId}`
       );
       eventSource.onmessage = (event) => {
         const data: ProcessingEvent = JSON.parse(event.data);

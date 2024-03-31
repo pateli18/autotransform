@@ -14,8 +14,6 @@ import {
   ChevronRightIcon,
   StopIcon,
 } from "@radix-ui/react-icons";
-import JsonView from "react18-json-view";
-import ReactJsonViewCompare from "react-json-view-compare";
 import { useEffect, useState } from "react";
 import {
   CodeView,
@@ -35,7 +33,7 @@ import {
 } from "@/components/ui/accordion";
 import { useNavigate } from "react-router-dom";
 import { stopProcess } from "../utils/apiCalls";
-import { badgeVariants } from "@/components/ui/badge";
+import JsonView from "react18-json-view";
 
 const ProcessStatus = (props: {
   status: ProcessingStatus;
@@ -113,10 +111,10 @@ const LogicErrorDisplay = (props: { logicError: LogicError }) => {
   return (
     <>
       <JsonView src={props.logicError.record} />
-      <ReactJsonViewCompare
-        oldData={props.logicError.actual_output}
-        newData={props.logicError.expected_output}
-      />
+      <div className="text-red-500">Actual Output</div>
+      <JsonView src={props.logicError.actual_output} />
+      <div className="text-green-500">Expected Output</div>
+      <JsonView src={props.logicError.expected_output} />
     </>
   );
 };

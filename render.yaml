@@ -11,6 +11,11 @@ services:
         - .vscode/**
         - docker-compose*
     envVars:
+      - key: BASE_URL
+        fromService:
+          name: autotransform
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
       - key: POSTGRES_URI
         fromDatabase:
           name: autotransformdb

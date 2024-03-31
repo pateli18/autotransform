@@ -771,8 +771,31 @@ async def processing_stop(config_id: UUID, run_id: UUID):
     return Response(status_code=204)
 
 
-@router.get("/status/{config_id}/{run_id}")
+@router.get(
+    "/status/{config_id}/{run_id}", response_model=ProcessEventMetadata
+)
 async def processing_status(
+    config_id: UUID,
+    run_id: UUID,
+    db: async_scoped_session = Depends(get_session),
+) -> ProcessEventMetadata:
+    async with processing_message_queue_lock:
+        processing_message = processing_message_queue.get(config_id)
+        if processing_message is None or processing_message.id != run_id:
+            processing_message = await get_processing_event(
+                config_id, run_id, db
+            )
+
+    if processing_message is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Run not found",
+        )
+    return processing_message.metadata
+
+
+@router.get("/status-ui/{config_id}/{run_id}", include_in_schema=False)
+async def processing_status_ui(
     config_id: UUID,
     run_id: UUID,
     db: async_scoped_session = Depends(get_session),
