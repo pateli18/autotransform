@@ -3,7 +3,6 @@ import {
   ExecutionError,
   LogicError,
   ModelChat,
-  OutputSchema,
   OutputSchemaError,
   ProcessingDebug,
   ProcessingEvent,
@@ -22,6 +21,8 @@ import {
   CodeView,
   CustomMarkdown,
   DataDisplay,
+  ExternalGitLink,
+  OutputSchemaView,
   StatusDisplay,
 } from "./DisplayUtils";
 import { loadAndFormatDate } from "../utils/date";
@@ -34,15 +35,7 @@ import {
 } from "@/components/ui/accordion";
 import { useNavigate } from "react-router-dom";
 import { stopProcess } from "../utils/apiCalls";
-
-const OutputSchemaView = (props: { schema: OutputSchema }) => {
-  return (
-    <>
-      <h3 className="text-lg font-medium">Output Schema</h3>
-      <JsonView src={props.schema.output_schema} />
-    </>
-  );
-};
+import { badgeVariants } from "@/components/ui/badge";
 
 const ProcessStatus = (props: {
   status: ProcessingStatus;
@@ -227,7 +220,7 @@ const RunView = (props: {
         timestamp={props.processingRun.timestamp}
       />
       {props.processingRun.output_schema !== null && (
-        <OutputSchemaView schema={props.processingRun.output_schema} />
+        <OutputSchemaView output_schema={props.processingRun.output_schema} />
       )}
       <CodeView code={props.processingRun.code} />
       {props.processingRun.output_schema_errors.length > 0 && (
@@ -292,6 +285,12 @@ export const ProcessEventView = (props: {
             <StopIcon className="mr-2 h-4 w-4" />
             Stop
           </Button>
+        )}
+        {props.processingEvent.message.pr_uri && (
+          <ExternalGitLink
+            url={props.processingEvent.message.pr_uri}
+            text="View PR"
+          />
         )}
       </div>
       <div className="text-xs text-muted-foreground">

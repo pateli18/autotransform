@@ -211,6 +211,7 @@ async def get_processing_event_history(
             ProcessEventsModel.output_count,
             ProcessEventsModel.status,
             ProcessEventsModel.updated_at,
+            ProcessEventsModel.pr_uri,
         )
         .where(ProcessEventsModel.config_id == config_id)
         .order_by(ProcessEventsModel.updated_at.desc())
@@ -226,6 +227,7 @@ async def get_processing_event_history(
                 output_count=cast(int, event.output_count),
                 status=cast(ProcessingStatus, event.status),
                 timestamp=cast(str, event.updated_at.isoformat()),
+                pr_uri=cast(Optional[str], event.pr_uri),
             )
         )
 

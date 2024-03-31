@@ -48,7 +48,6 @@ const EnterDataDialog = (props: {
     React.SetStateAction<ProcessEventMetadata[]>
   >;
 }) => {
-  console.log(props.configId);
   const navigate = useNavigate();
   const [submitLoading, setSubmitLoading] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({

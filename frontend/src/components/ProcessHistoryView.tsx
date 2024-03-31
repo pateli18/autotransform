@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { ProcessEventMetadata } from "src/types";
 import { loadAndFormatDate } from "../utils/date";
-import { StatusDisplay } from "./DisplayUtils";
+import { ExternalGitLink, StatusDisplay } from "./DisplayUtils";
 
 const ProcessEventMetadataView = (props: { event: ProcessEventMetadata }) => {
   const navigate = useNavigate();
@@ -24,6 +24,9 @@ const ProcessEventMetadataView = (props: { event: ProcessEventMetadata }) => {
           {props.event.output_count}{" "}
           {props.event.output_count > 1 ? "Records" : "Record"}
         </Badge>
+      )}
+      {props.event.pr_uri && (
+        <ExternalGitLink url={props.event.pr_uri} text="View PR" />
       )}
     </div>
   );

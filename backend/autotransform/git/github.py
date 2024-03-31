@@ -86,7 +86,7 @@ class GithubGitClient(GitClient[PullRequest.PullRequest]):
                 branch=branch_name,
             )
 
-        return response["commit"].url
+        return response["commit"].html_url
 
     def _create_pull_request(
         self, title: str, body: str, branch_name: str
@@ -98,7 +98,7 @@ class GithubGitClient(GitClient[PullRequest.PullRequest]):
             head=branch_name,
             base=self.primary_branch_name,
         )
-        return pull_request, pull_request.url
+        return pull_request, pull_request.html_url
 
     def _merge_pull_request(
         self, pull_request: PullRequest.PullRequest
@@ -110,7 +110,7 @@ class GithubGitClient(GitClient[PullRequest.PullRequest]):
         contents = repo.get_contents(file_path, ref=self.primary_branch_name)
         if isinstance(contents, list):
             raise ValueError(f"File {file_path} is a directory")
-        return contents.decoded_content.decode(), contents.git_url
+        return contents.decoded_content.decode(), contents.html_url
 
     def get_latest_assets(self) -> tuple[OutputSchema, Optional[Code]]:
         output_schema_raw, output_schema_commit = self._get_file_contents(

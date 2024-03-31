@@ -450,6 +450,7 @@ class ProcessingMessage(ProcessEventMetadata):
             output_count=self.output_count,
             status=self.status,
             timestamp=self.timestamp,
+            pr_uri=self.pr_uri,
         )
 
 
@@ -513,11 +514,11 @@ class GitClient(Generic[T]):
         merged = False
         title = f"AutoTransform [{'PASS' if execution_passed else 'FAIL'}] {self.service_name} event={self.event_id}"
         body = f"You can view the code generation process and results [here]({settings.base_url}/run/{self.service_id}/{self.event_id})"
-        pr, url = self._create_pull_request(title, body, self.branch_name)
+        pr, uri = self._create_pull_request(title, body, self.branch_name)
         if not self.block_human_review and execution_passed:
             self._merge_pull_request(pr)
             merged = True
-        return url, merged
+        return uri, merged
 
     def check_pr_status(self) -> ProcessingStatus:
         if self.branch_name is None:

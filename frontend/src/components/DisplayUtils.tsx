@@ -1,7 +1,7 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import { DownloadIcon } from "@radix-ui/react-icons";
 import JsonView from "react18-json-view";
-import { Code, ProcessingStatus } from "src/types";
+import { Code, OutputSchema, ProcessingStatus } from "src/types";
 import { buttonVariants } from "@/components/ui/button";
 import Markdown from "react-markdown";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -90,8 +90,48 @@ export const CodeView = (props: { code: Code }) => {
 
   return (
     <>
-      <h3 className="text-lg font-medium">Code</h3>
+      <div className="space-x-2 flex items-center">
+        <h3 className="text-lg font-medium">Code</h3>
+        {props.code.commit && (
+          <ExternalGitLink url={props.code.commit} text="View Git Commit" />
+        )}
+      </div>
       <CustomMarkdown content={codeToDisplay} />
     </>
+  );
+};
+
+export const OutputSchemaView = (props: { output_schema: OutputSchema }) => {
+  return (
+    <>
+      <div className="space-x-2 flex items-center">
+        <h3 className="text-lg font-medium">Output Schema</h3>
+        {props.output_schema.commit && (
+          <ExternalGitLink
+            url={props.output_schema.commit}
+            text="View Git Commit"
+          />
+        )}
+      </div>
+      <JsonView src={props.output_schema.output_schema} />
+    </>
+  );
+};
+
+export const ExternalGitLink = (props: { url: string; text: string }) => {
+  const handleClick = (
+    event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
+  ) => {
+    event.stopPropagation();
+  };
+  return (
+    <a
+      href={props.url}
+      target="_blank"
+      className={badgeVariants({ variant: "secondary" })}
+      onClick={handleClick}
+    >
+      {props.text}
+    </a>
   );
 };
