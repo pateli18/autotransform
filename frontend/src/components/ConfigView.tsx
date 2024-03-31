@@ -430,27 +430,18 @@ const ConfigSelection = (props: {
 
 export const ConfigViewControls = (props: {
   configId: string | null;
+  configMetadata: ConfigMetadata[];
   setConfigId: (configId: string | null) => void;
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [configs, setConfigs] = useState<ConfigMetadata[]>([]);
-
-  useEffect(() => {
-    getAllConfigs().then((data) => {
-      if (data === null) {
-        toast.error("Failed to fetch services");
-      } else {
-        setConfigs(data);
-        if (props.configId === null && data.length > 0) {
-          props.setConfigId(data[0].config_id);
-        }
-      }
-    });
-  }, []);
 
   useEffect(() => {
     if (props.configId === null && drawerOpen === false) {
-      props.setConfigId(configs.length > 0 ? configs[0].config_id : null);
+      props.setConfigId(
+        props.configMetadata.length > 0
+          ? props.configMetadata[0].config_id
+          : null
+      );
     }
   }, [drawerOpen]);
 
@@ -472,9 +463,9 @@ export const ConfigViewControls = (props: {
           <PlusIcon className="w-4 h-4 mr-2" />
           New Service
         </Button>
-        {configs.length > 0 && (
+        {props.configMetadata.length > 0 && (
           <ConfigSelection
-            configs={configs}
+            configs={props.configMetadata}
             configId={props.configId}
             setConfigId={props.setConfigId}
           />

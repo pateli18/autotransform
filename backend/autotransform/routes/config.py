@@ -185,7 +185,9 @@ async def upsert_config(
 async def get_all_configs(
     db: async_scoped_session = Depends(get_session),
 ) -> list[ConfigMetadata]:
-    configs_result = await db.execute(select(ConfigModel))
+    configs_result = await db.execute(
+        select(ConfigModel).order_by(ConfigModel.updated_at.desc())
+    )
     configs = configs_result.scalars().all()
     return [
         ConfigMetadata(

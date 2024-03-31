@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { Config, ProcessEventMetadata } from "../types";
+import { Config, ConfigMetadata, ProcessEventMetadata } from "../types";
 import { ConfigViewControls } from "../components/ConfigView";
 import { Layout } from "../components/Layout";
 import { ProcessHistoryView } from "../components/ProcessHistoryView";
-import { getConfig, processData, stopProcess } from "../utils/apiCalls";
+import {
+  getAllConfigs,
+  getConfig,
+  processData,
+  stopProcess,
+} from "../utils/apiCalls";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,6 +153,8 @@ export const ProcessHistoryRoute = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [configId, setConfigId] = useState<string | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
+  const [configMetadata, setConfigMetadata] = useState<ConfigMetadata[]>([]);
+  const [dataLoading, setDataLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [processEvents, setProcessEvents] = useState<ProcessEventMetadata[]>(
     []
@@ -155,7 +162,18 @@ export const ProcessHistoryRoute = () => {
   const latestRun = processEvents.length > 0 ? processEvents[0] : null;
 
   useEffect(() => {
+    getAllConfigs().then((data) => {
+      if (data === null) {
+        toast.error("Failed to fetch services");
+      } else {
+        setConfigMetadata(data);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     if (configId !== null) {
+      setDataLoading(true);
       getConfig(configId).then((data) => {
         if (data === null) {
           toast.error("Failed to fetch config");
@@ -166,12 +184,19 @@ export const ProcessHistoryRoute = () => {
           setProcessEvents(data.history);
           setConfig(data.config);
         }
+        setDataLoading(false);
       });
       if (configId !== searchParams.get("configId")) {
         setSearchParams({ configId });
       }
     }
   }, [configId]);
+
+  useEffect(() => {
+    if (configMetadata.length > 0 && configId === null) {
+      setConfigId(configMetadata[0].config_id);
+    }
+  }, [configMetadata]);
 
   useEffect(() => {
     if (searchParams.has("configId")) {
@@ -192,7 +217,11 @@ export const ProcessHistoryRoute = () => {
 
   return (
     <Layout>
-      <ConfigViewControls configId={configId} setConfigId={setConfigId} />
+      <ConfigViewControls
+        configId={configId}
+        setConfigId={setConfigId}
+        configMetadata={configMetadata}
+      />
       {config !== null && (
         <EnterDataDialog
           dialogOpen={dialogOpen}
