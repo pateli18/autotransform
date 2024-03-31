@@ -73,14 +73,12 @@ async def refresh_config_from_git(
 
     # get latest assets
     output_schema, code = git_client.get_latest_assets()
-    logger.info(f"Output schema: {output_schema.commit}")
-    logger.info(f"config.output_schema: {config.output_schema.commit}")
     update = False
-    if output_schema.commit != config.output_schema.commit:
+    if output_schema.output_schema != config.output_schema.output_schema:
         update = True
         config.output_schema = output_schema
     if config.code is None or (
-        code is not None and code.commit != config.code.commit
+        code is not None and code.code != config.code.code
     ):
         update = True
         config.code = code
