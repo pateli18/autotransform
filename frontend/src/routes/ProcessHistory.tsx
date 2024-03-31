@@ -40,6 +40,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProcessConfigurationView } from "../components/ProcessConfigurationView";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   data: z.array(z.record(z.any(), z.any())),
@@ -230,53 +231,60 @@ export const ProcessHistoryRoute = () => {
           setProcessEvents={setProcessEvents}
         />
       )}
-      <Tabs defaultValue="history">
-        <div className="space-x-2 flex items-center">
-          <TabsList>
-            <TabsTrigger value="history">History</TabsTrigger>
-            {config !== null && (
-              <TabsTrigger value="config">Configure</TabsTrigger>
-            )}
-          </TabsList>
-          {configId !== null && (
-            <Button
-              disabled={latestRun?.status === "running"}
-              onClick={() => setDialogOpen(true)}
-            >
-              {latestRun?.status === "running"
-                ? "Processing"
-                : "Start Processing"}
-              {latestRun?.status === "running" && (
-                <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />
-              )}
-            </Button>
-          )}
-          {latestRun?.status === "running" && configId && (
-            <Button onClick={onClickStop} variant="destructive">
-              <StopIcon className="mr-2 h-4 w-4" />
-              Stop
-            </Button>
-          )}
+      {dataLoading ? (
+        <div className="flex items-center justify-center h-40">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <div className="ml-2">Loading Data</div>
         </div>
-        <TabsContent value="history">
-          {processEvents.length > 0 ? (
-            <ProcessHistoryView processEvents={processEvents} />
-          ) : (
-            <Alert>
-              <ExclamationTriangleIcon className="h-4 w-4" />
-              <AlertTitle>No History Available</AlertTitle>
-              <AlertDescription>
-                Click {configId === null ? "New Service" : "Start Processing"}
-              </AlertDescription>
-            </Alert>
-          )}
-        </TabsContent>
-        {config !== null && (
-          <TabsContent value="config">
-            <ProcessConfigurationView config={config} />
+      ) : (
+        <Tabs defaultValue="history">
+          <div className="space-x-2 flex items-center">
+            <TabsList>
+              <TabsTrigger value="history">History</TabsTrigger>
+              {config !== null && (
+                <TabsTrigger value="config">Configure</TabsTrigger>
+              )}
+            </TabsList>
+            {configId !== null && (
+              <Button
+                disabled={latestRun?.status === "running"}
+                onClick={() => setDialogOpen(true)}
+              >
+                {latestRun?.status === "running"
+                  ? "Processing"
+                  : "Start Processing"}
+                {latestRun?.status === "running" && (
+                  <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />
+                )}
+              </Button>
+            )}
+            {latestRun?.status === "running" && configId && (
+              <Button onClick={onClickStop} variant="destructive">
+                <StopIcon className="mr-2 h-4 w-4" />
+                Stop
+              </Button>
+            )}
+          </div>
+          <TabsContent value="history">
+            {processEvents.length > 0 ? (
+              <ProcessHistoryView processEvents={processEvents} />
+            ) : (
+              <Alert>
+                <ExclamationTriangleIcon className="h-4 w-4" />
+                <AlertTitle>No History Available</AlertTitle>
+                <AlertDescription>
+                  Click {configId === null ? "New Service" : "Start Processing"}
+                </AlertDescription>
+              </Alert>
+            )}
           </TabsContent>
-        )}
-      </Tabs>
+          {config !== null && (
+            <TabsContent value="config">
+              <ProcessConfigurationView config={config} />
+            </TabsContent>
+          )}
+        </Tabs>
+      )}
     </Layout>
   );
 };
