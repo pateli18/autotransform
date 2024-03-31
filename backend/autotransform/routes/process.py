@@ -41,7 +41,7 @@ from autotransform.db.api import (
     update_processing_event,
 )
 from autotransform.db.base import async_session_scope, get_session
-from autotransform.file_api import read_data_partial, save_data
+from autotransform.file import file_client
 from autotransform.git import get_git_client, refresh_config_from_git
 from autotransform.model import (
     model_client,
@@ -651,7 +651,7 @@ async def execute_data_processing(
                 processing_message.await_review(output_count=len(outputs))
             else:
                 processing_message.complete(output_count=len(outputs))
-            await save_data(
+            await file_client.save_data(
                 outputs,
                 data.config_id,
                 processing_message.id,
@@ -743,7 +743,7 @@ async def processing_start(
             status=cast(ProcessingStatus, new_event.status),
         )
 
-    await save_data(
+    await file_client.save_data(
         request.records,
         request.config_id,
         cast(UUID, new_event.id),
@@ -801,7 +801,7 @@ async def processing_status_ui(
     db: async_scoped_session = Depends(get_session),
 ):
     async def event_generator():
-        input_data = await read_data_partial(
+        input_data = await file_client.read_data_partial(
             config_id, run_id, DataType.input, DATA_RECORDS_TO_DISPLAY
         )
         output_data = None
@@ -817,7 +817,7 @@ async def processing_status_ui(
                     )
             if processing_message is not None:
                 if processing_message.output_count:
-                    output_data = await read_data_partial(
+                    output_data = await file_client.read_data_partial(
                         config_id,
                         run_id,
                         DataType.output,

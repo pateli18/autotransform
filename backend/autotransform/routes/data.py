@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from autotransform.autotransform_types import DataType
-from autotransform.file_api import read_data
+from autotransform.file import file_client
 
 router = APIRouter(
     prefix="/data",
@@ -22,7 +22,7 @@ async def export(
     data_type: DataType,
 ):
     async def generate_jsonl():
-        async for line in read_data(config_id, run_id, data_type):
+        async for line in file_client.read_data(config_id, run_id, data_type):
             yield line
 
     return StreamingResponse(

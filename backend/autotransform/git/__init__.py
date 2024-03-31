@@ -15,7 +15,7 @@ from autotransform.db.api import (
     save_processing_config,
     update_processing_event,
 )
-from autotransform.utils import GitType, settings
+from autotransform.utils import GitProviderType, settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def get_git_client(
     if git_config is None:
         raise ValueError("Git config is required")
 
-    if settings.git_provider == GitType.github:
+    if settings.git_provider == GitProviderType.github:
         from .github import GithubGitClient
 
         return GithubGitClient(

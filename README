@@ -157,7 +157,7 @@ You can add other git providers by:
 
 1. Adding a new class that inherits from [GitClient](./backend/autotransform/git/autotransform_types.py#L467). See the [github.py](./backend/autotransform/git/github.py) for an example.
 2. Updating the [get_git_client](./backend/autotransform/git/__init__.py#L23) function to return your new class when the `GIT_PROVIDER` environment variable is set to the name of your new class.
-3. Updating the [GitType](./backend/autotransform/utils.py#L8) enum to include your new provider
+3. Updating the [GitProviderType](./backend/autotransform/utils.py#L12) enum to include your new provider
 
 ### File
 
@@ -167,6 +167,12 @@ AutoTransform provides a file extension that allows you to store your files in t
 - **FILE_PROVIDER_CONFIG**: A json object that contains the configuration for your file provider. The format of this object is specific to the provider you are using.
   - For `local` the format is:
     - **save_path**: The path to the directory where you want to store your files
+
+You can add other file proviers by:
+
+1. Adding a new class that inherits from [FileClient](./backend/autotransform/file/autotransform_types.py#L572). See the [local.py](./backend/autotransform/file/local.py) for an example.
+2. Updating the [\_\_init\_\_.py](./backend/autotransform/file/__init__.py#L23) file to return your new class when the `FILE_PROVIDER` environment variable is set to the name of your new class.
+3. Updating the [FileProviderType](./backend/autotransform/utils.py#L8) enum to include your new provider
 
 ## Debugging Prompts
 

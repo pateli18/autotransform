@@ -1,3 +1,4 @@
+import asyncio
 import json
 from abc import abstractmethod
 from datetime import datetime
@@ -7,6 +8,7 @@ from hashlib import blake2s
 from typing import Generic, Literal, Optional, TypeVar, Union
 from uuid import UUID
 
+from cachetools import TTLCache
 from pydantic import BaseModel, Field
 
 from autotransform.utils import settings
@@ -565,3 +567,34 @@ class GitClient(Generic[T]):
 class ConfigResponse(BaseModel):
     history: list[ProcessEventMetadata]
     config: ProcessingConfig
+
+
+class FileClient:
+    def __init__(self, file_provider_config: str):
+        self.file_provider_config = file_provider_config
+        self.partial_data_cache: TTLCache[str, list[dict]] = TTLCache(
+            maxsize=1000, ttl=300
+        )
+        self.partial_data_cache_lock = asyncio.Lock()
+
+    @abstractmethod
+    async def save_data(
+        self,
+        data: list[dict],
+        config_id: UUID,
+        run_id: UUID,
+        data_type: DataType,
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def read_data(
+        self, config_id: UUID, run_id: UUID, data_type: DataType
+    ) -> list[dict]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def read_data_partial(
+        self, config_id: UUID, run_id: UUID, data_type: DataType, num_rows: int
+    ) -> list[dict]:
+        raise NotImplementedError()

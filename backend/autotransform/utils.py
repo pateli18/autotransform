@@ -5,7 +5,11 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 
 
-class GitType(str, Enum):
+class FileProviderType(str, Enum):
+    local = "local"
+
+
+class GitProviderType(str, Enum):
     github = "github"
 
 
@@ -17,11 +21,12 @@ class Environment(str, Enum):
 class Settings(BaseSettings):
     openai_api_key: str
     postgres_uri: str
+    file_provider: FileProviderType = FileProviderType.local
+    file_provider_config: str = '{"save_path": "/app-data/"}'
     environment: Environment = Environment.dev
-    git_provider: Optional[GitType] = None
+    git_provider: Optional[GitProviderType] = None
     git_provider_secret: Optional[str] = None
     base_url: str = "http://localhost:8000"
-    file_save_path: str = "/app-data/"
     processing_debug: bool = False
     log_level: str = "INFO"
 
