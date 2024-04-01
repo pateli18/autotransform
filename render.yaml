@@ -1,7 +1,6 @@
 services:
   - type: web
     name: autotransform
-    plan: free
     runtime: docker
     repo: https://github.com/pateli18/autotransform
     dockerfilePath: ./Dockerfile
@@ -41,4 +40,3 @@ services:
 databases:
   - name: autotransformdb
     postgresMajorVersion: "15"
-    plan: free
