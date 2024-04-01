@@ -630,6 +630,7 @@ async def execute_data_processing(
                     git_client,
                 )
                 record_to_process_index = 0
+                outputs = []
         passed = True
     except Exception:
         logger.exception("Error processing data")
