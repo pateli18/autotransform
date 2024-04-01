@@ -1,6 +1,6 @@
 import { Config } from "src/types";
 import { useEffect, useState } from "react";
-import { CodeView, CustomMarkdown, DataDisplay } from "./DisplayUtils";
+import { CodeView, DataDisplay } from "./DisplayUtils";
 import { ConfigForm, formSchema } from "./ConfigView";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,6 +45,31 @@ export const ProcessConfigurationView = (props: { config: Config }) => {
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setSubmitLoading(true);
+    if (data.gitUse === true) {
+      let error = false;
+      if (data.gitOwner === undefined) {
+        form.setError("gitOwner", {
+          message: "Owner is required",
+        });
+        error = true;
+      }
+      if (data.gitRepoName === undefined) {
+        form.setError("gitRepoName", {
+          message: "Repo Name is required",
+        });
+        error = true;
+      }
+      if (data.gitPrimaryBranch === undefined) {
+        form.setError("gitPrimaryBranch", {
+          message: "Primary Branch is required",
+        });
+        error = true;
+      }
+      if (error) {
+        setSubmitLoading(false);
+        return;
+      }
+    }
     const response = await upsertConfig(
       props.config.config_id,
       data.name,

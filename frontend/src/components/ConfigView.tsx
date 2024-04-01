@@ -43,35 +43,23 @@ import {
 } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export const formSchema = z
-  .object({
-    name: z.string(),
-    outputSchema: z.record(z.any(), z.any()),
-    labeledData: z
-      .array(
-        z.object({
-          input: z.record(z.any(), z.any()),
-          output: z.record(z.any(), z.any()),
-        })
-      )
-      .optional(),
-    gitUse: z.boolean().optional(),
-    gitOwner: z.string().optional(),
-    gitRepoName: z.string().optional(),
-    gitPrimaryBranch: z.string().optional(),
-    gitBlockHumanReview: z.boolean().optional(),
-  })
-  .refine((data) => {
-    if (data.gitUse === true) {
-      return (
-        data.gitOwner &&
-        data.gitRepoName &&
-        data.gitPrimaryBranch &&
-        data.gitBlockHumanReview !== undefined
-      );
-    }
-    return true;
-  });
+export const formSchema = z.object({
+  name: z.string(),
+  outputSchema: z.record(z.any(), z.any()),
+  labeledData: z
+    .array(
+      z.object({
+        input: z.record(z.any(), z.any()),
+        output: z.record(z.any(), z.any()),
+      })
+    )
+    .optional(),
+  gitUse: z.boolean().optional(),
+  gitOwner: z.string().optional(),
+  gitRepoName: z.string().optional(),
+  gitPrimaryBranch: z.string().optional(),
+  gitBlockHumanReview: z.boolean().optional(),
+});
 
 const jsonValidator = (data: any) => {
   if (!data.input || !data.output) {
@@ -359,6 +347,32 @@ const ConfigView = (props: {
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setSubmitLoading(true);
+    if (data.gitUse === true) {
+      let error = false;
+      if (data.gitOwner === undefined) {
+        form.setError("gitOwner", {
+          message: "Owner is required",
+        });
+        error = true;
+      }
+      if (data.gitRepoName === undefined) {
+        form.setError("gitRepoName", {
+          message: "Repo Name is required",
+        });
+        error = true;
+      }
+      if (data.gitPrimaryBranch === undefined) {
+        form.setError("gitPrimaryBranch", {
+          message: "Primary Branch is required",
+        });
+        error = true;
+      }
+      if (error) {
+        setSubmitLoading(false);
+        return;
+      }
+    }
+
     const response = await upsertConfig(
       null,
       data.name,
@@ -369,7 +383,7 @@ const ConfigView = (props: {
             owner: data.gitOwner!,
             repo_name: data.gitRepoName!,
             primary_branch_name: data.gitPrimaryBranch!,
-            block_human_review: data.gitBlockHumanReview!,
+            block_human_review: data.gitBlockHumanReview ?? false,
           }
         : null
     );
@@ -377,6 +391,7 @@ const ConfigView = (props: {
     if (response === null) {
       toast.error("Failed to upsert config");
     } else {
+      window.location.reload();
       props.setConfigId(response.config_id);
       toast.success("Config created successfully");
       props.setDrawerOpen(false);
