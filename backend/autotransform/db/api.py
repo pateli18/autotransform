@@ -186,7 +186,9 @@ async def update_processing_event(
     event: ProcessingMessage | ProcessEventMetadata,
     db: async_scoped_session,
 ) -> None:
-    update_values = event.model_dump(exclude={"runs", "id", "timestamp"})
+    update_values = event.model_dump(
+        exclude={"runs", "id", "timestamp", "start_timestamp"}
+    )
     if isinstance(event, ProcessingMessage):
         event_history_raw = event.model_dump_json(include={"runs"})
         event_history = json.loads(event_history_raw)
