@@ -68,11 +68,11 @@ The frontend is served on [http://localhost:3000](http://localhost:3000)
 
 2. Once you have created a service, click `Start Processing` and provide some input data, the format of which is just an array of json objects. This will redirect you to the the `/run` page where you can see the model working in real time to generate the relevant code and output data. You can stop this process at any time by clicking `Stop`.
 
-TODO: Display gif
+![Start Processing](./images/start_processing.gif)
 
 3. Once the processing is complete, you can download the output data by clicking the download icon next to `Output`. Navigating back to the main page will show you a history of all processing executions and will allow you to update the **Service** configuration as you see fit.
 
-TODO: Display gif
+![Downlaod Output](./images/download_and_view_history.gif)
 
 ## Using the API
 
@@ -140,7 +140,7 @@ with httpx.stream(
 
 ### Git
 
-TODO: display gif
+![Github Integration](./images/github_integration.gif)
 
 AutoTransform provides a git extension that allows you to store your services code and output schema in a git repository. You can even use the git repository to block output schema and code updates from being applied to your service without a human review. To use the git extension, you will need to provide the following environment variables:
 
@@ -155,7 +155,7 @@ The git settings for individual services can be configured within the `Git Setti
 
 You can add other git providers by:
 
-1. Adding a new class that inherits from [GitClient](./backend/autotransform/git/autotransform_types.py#L467). See the [github.py](./backend/autotransform/git/github.py) for an example.
+1. Adding a new class that inherits from [GitClient](./backend/autotransform/autotransform_types.py#L467). See the [github.py](./backend/autotransform/git/github.py) for an example.
 2. Updating the [get_git_client](./backend/autotransform/git/__init__.py#L23) function to return your new class when the `GIT_PROVIDER` environment variable is set to the name of your new class.
 3. Updating the [GitProviderType](./backend/autotransform/utils.py#L12) enum to include your new provider
 
@@ -164,13 +164,13 @@ You can add other git providers by:
 AutoTransform provides a file extension that allows you to store your files in the storage provider of your choice. To use the file extension, you will need to provide the following environment variables:
 
 - **FILE_PROVIDER**: The file provider you are using, currently only `local` is supported
-- **FILE_PROVIDER_CONFIG**: A json object that contains the configuration for your file provider. The format of this object is specific to the provider you are using.
-  - For `local` the format is:
+- **FILE_PROVIDER_CONFIG**: A string that contains the configuration for your file provider. The format of this object is specific to the provider you are using.
+  - For `local` the format is a json obejct with the following keys:
     - **save_path**: The path to the directory where you want to store your files
 
 You can add other file proviers by:
 
-1. Adding a new class that inherits from [FileClient](./backend/autotransform/file/autotransform_types.py#L572). See the [local.py](./backend/autotransform/file/local.py) for an example.
+1. Adding a new class that inherits from [FileClient](./backend/autotransform/autotransform_types.py#L572). See the [local.py](./backend/autotransform/file/local.py) for an example.
 2. Updating the [\_\_init\_\_.py](./backend/autotransform/file/__init__.py#L23) file to return your new class when the `FILE_PROVIDER` environment variable is set to the name of your new class.
 3. Updating the [FileProviderType](./backend/autotransform/utils.py#L8) enum to include your new provider
 
@@ -178,4 +178,4 @@ You can add other file proviers by:
 
 AutoTransform will display the prompts used to generate the code and schema in the `/run` view, just make sure you have the **PROCESSING_DEBUG** environment variable set to `true`.
 
-TODO: Display gif
+![Debug Prompts](./images/debug_prompts.gif)
