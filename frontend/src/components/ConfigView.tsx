@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
-import { getAllConfigs, upsertConfig } from "../utils/apiCalls";
+import { upsertConfig } from "../utils/apiCalls";
 import { toast } from "sonner";
 import { CaretSortIcon, PlusIcon, ReloadIcon } from "@radix-ui/react-icons";
 import {
@@ -46,14 +46,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 export const formSchema = z.object({
   name: z.string(),
   outputSchema: z.record(z.any(), z.any()),
-  labeledData: z
-    .array(
-      z.object({
-        input: z.record(z.any(), z.any()),
-        output: z.record(z.any(), z.any()),
-      })
-    )
-    .optional(),
+  labeledData: z.array(
+    z.object({
+      input: z.record(z.any(), z.any()),
+      output: z.record(z.any(), z.any()),
+    })
+  ),
   gitUse: z.boolean().optional(),
   gitOwner: z.string().optional(),
   gitRepoName: z.string().optional(),
@@ -221,26 +219,6 @@ export const ConfigForm = (props: {
           )}
         />
         <FormField
-          name="outputSchema"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Output Schema</FormLabel>
-              <OutputSchema
-                labeledData={labeledData ?? null}
-                parsedValue={props.parsedValue}
-                setParsedValue={props.setParsedValue}
-              />
-              <FormDescription>
-                The jsonschema that will be enforced by the service when it
-                processes a record. You can provided some labeled records below
-                and generate this automatically, or add it in whatever format
-                you like and have the system parse it.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
           name="labeledData"
           render={({ field }) => (
             <FormItem>
@@ -266,15 +244,14 @@ export const ConfigForm = (props: {
                           },
                           { shouldFocus: true }
                         );
-                        form.setValue("labeledData", undefined);
+                        form.reset({ labeledData: undefined });
                       });
                   }
                 }}
               />
               <FormDescription>
-                {<strong>OPTIONAL</strong>} Each record should be a json object
-                with an `input` key and an `output` key, with corresponding json
-                objects as values
+                Each record should be a json object with an `input` key and an
+                `output` key, with corresponding json objects as values
               </FormDescription>
               <FormMessage />
               {labeledData && (
@@ -284,6 +261,26 @@ export const ConfigForm = (props: {
                   recordCount={labeledData.length}
                 />
               )}
+            </FormItem>
+          )}
+        />
+        <FormField
+          name="outputSchema"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Output Schema</FormLabel>
+              <OutputSchema
+                labeledData={labeledData ?? null}
+                parsedValue={props.parsedValue}
+                setParsedValue={props.setParsedValue}
+              />
+              <FormDescription>
+                The jsonschema that will be enforced by the service when it
+                processes a record. You can provided some labeled records below
+                and generate this automatically, or add it in whatever format
+                you like and have the system parse it.
+              </FormDescription>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -377,7 +374,7 @@ const ConfigView = (props: {
       null,
       data.name,
       data.outputSchema,
-      data.labeledData ?? null,
+      data.labeledData,
       data.gitUse
         ? {
             owner: data.gitOwner!,

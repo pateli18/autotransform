@@ -100,7 +100,7 @@ export interface Config {
   output_schema: OutputSchema;
   previous_records: UnlabeledExample[] | null;
   current_records: UnlabeledExample[] | null;
-  user_provided_records: LabeledExample[] | null;
+  user_provided_records: LabeledExample[];
   bot_provided_records: LabeledExample[] | null;
   git_config: GitConfig | null;
 }

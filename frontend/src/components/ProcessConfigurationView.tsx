@@ -74,7 +74,7 @@ export const ProcessConfigurationView = (props: { config: Config }) => {
       props.config.config_id,
       data.name,
       data.outputSchema,
-      data.labeledData ?? null,
+      data.labeledData,
       data.gitUse
         ? {
             owner: data.gitOwner!,

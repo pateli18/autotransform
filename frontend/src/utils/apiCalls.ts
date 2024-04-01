@@ -31,7 +31,7 @@ export const upsertConfig = async (
   configId: string | null,
   name: string,
   outputSchema: Object,
-  labeledRecords: LabeledExample[] | null,
+  labeledRecords: LabeledExample[],
   gitConfig: GitConfig | null
 ) => {
   let response = null;

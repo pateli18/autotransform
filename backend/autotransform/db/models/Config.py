@@ -17,7 +17,7 @@ class ConfigModel(Base, TimestampMixin):
     name = Column(VARCHAR, nullable=False)
     previous_records = Column(JSONB, nullable=True)
     current_records = Column(JSONB, nullable=True)
-    user_provided_records = Column(JSONB, nullable=True)
+    user_provided_records = Column(JSONB, nullable=False)
     bot_provided_records = Column(JSONB, nullable=True)
 
     # code columns

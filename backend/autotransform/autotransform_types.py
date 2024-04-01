@@ -151,7 +151,7 @@ class ProcessingConfig(BaseModel):
     previous_records: Optional[list[BaseRecord]] = None
     current_records: Optional[list[BaseRecord]] = None
     output_schema: OutputSchema
-    user_provided_records: Optional[list[ExampleRecord]] = None
+    user_provided_records: list[ExampleRecord]
     bot_provided_records: Optional[list[ExampleRecord]] = None
     git_config: Optional[GitConfig] = None
     code_qa: CodeQa = Field(default_factory=CodeQa)
@@ -196,9 +196,7 @@ class ProcessingConfig(BaseModel):
 
     @property
     def examples(self) -> list[ExampleRecord]:
-        return (self.user_provided_records or []) + (
-            self.bot_provided_records or []
-        )
+        return self.user_provided_records + (self.bot_provided_records or [])
 
     @property
     def _base_prompt(self) -> str:
@@ -245,7 +243,7 @@ class UpsertConfig(BaseModel):
     config_id: Optional[UUID] = None
     name: str
     output_schema: dict
-    user_provided_records: Optional[list[ExampleRecord]] = None
+    user_provided_records: list[ExampleRecord]
     git_config: Optional[GitConfig] = None
 
 

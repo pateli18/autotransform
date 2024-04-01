@@ -54,7 +54,7 @@ async def upsert_config(
     db: async_scoped_session = Depends(get_session),
 ) -> UpsertConfigResponse:
 
-    for record in request.user_provided_records or []:
+    for record in request.user_provided_records:
         try:
             jsonschema.validate(request.output_schema, record.output)
         except jsonschema.ValidationError as e:
@@ -117,10 +117,7 @@ async def upsert_config(
         config.output_schema = cast(Column, request.output_schema)
         config.user_provided_records = cast(
             Column,
-            [
-                record.model_dump()
-                for record in request.user_provided_records or []
-            ],
+            [record.model_dump() for record in request.user_provided_records],
         )
         if request.git_config is None:
             config.git_owner = cast(Column, None)
