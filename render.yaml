@@ -1,4 +1,3 @@
-previewsEnabled: true
 services:
   - type: web
     name: autotransform
@@ -21,8 +20,7 @@ services:
           name: autotransformdb
           property: connectionString
       - key: WEB_CONCURRENCY
-        value: 5
-        previewValue: 1
+        value: 1
       - key: ENVIRONMENT
         value: prod
       - key: PROCESSING_DEBUG
@@ -33,6 +31,12 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: FILE_PROVIDER
+        value: local
+      - key: FILE_PROVIDER_CONFIG
+        value: '{"save_path": "/app-data/"}'
+      - key: LOG_LEVEL
+        value: INFO
 databases:
   - name: autotransformdb
     postgresMajorVersion: "15"
