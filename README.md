@@ -58,13 +58,13 @@ cd frontend; npm install
 cd frontend; npm run start
 ```
 
-The frontend is server on [http://localhost:3000](http://localhost:3000)
+The frontend is served on [http://localhost:3000](http://localhost:3000)
 
 ## Using the Application
 
 1. Create a **Service** by clicking the `New Service` button. As part of creating the service, you will need to provide at least a _Name_ and _Output Schema_. The _Output Schema_ is a [JSON Schema](https://json-schema.org/) object that represents the structure of the data that will be returned by the service. You don't need to provide your output schema in the JSON Schema syntax, when you click `Parse` the application will automatically convert it for you. You can also optionally provide _Labeled Data_ to help the service undersand how you want the data transformed, the format should be an array of json objects where each object has an `input` key and an `output` key, both of whose values are also json objects. If you do provide this data, you can also auto-generate the _Output Schema_ from these labeled examples by clicking `Use Labeled Data`.
 
-TODO: Display gif
+![Create Service](./images/create_service.gif)
 
 2. Once you have created a service, click `Start Processing` and provide some input data, the format of which is just an array of json objects. This will redirect you to the the `/run` page where you can see the model working in real time to generate the relevant code and output data. You can stop this process at any time by clicking `Stop`.
 
