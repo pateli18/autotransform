@@ -1,0 +1,5 @@
+.venv
+postgres-data
+.envrc
+app-data
+frontend/node_modules

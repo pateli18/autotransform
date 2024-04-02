@@ -16,7 +16,7 @@ services:
       timeout: 5s
       retries: 5
   app:
-    image: autotransform:latest
+    image: autotransform-prod:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -34,6 +34,5 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./backend:/app
       - ./app-data:/app-data
     restart: always

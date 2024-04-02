@@ -19,7 +19,7 @@ WORKDIR /usr/src/app
 # Copy / Install dependencies
 COPY frontend/*.json ./
 
-RUN npm ci
+RUN npm ci --no-audit
 
 # Copy source (ts(x)/css/js(x)/html) code
 ADD frontend/ /usr/src/app/
