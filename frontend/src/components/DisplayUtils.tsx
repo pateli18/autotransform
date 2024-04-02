@@ -4,7 +4,7 @@ import JsonView from "react18-json-view";
 import { Code, OutputSchema, ProcessingStatus } from "src/types";
 import { buttonVariants } from "@/components/ui/button";
 import Markdown from "react-markdown";
-import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
+import SyntaxHighlighter from "react-syntax-highlighter";
 import a11yDark from "react-syntax-highlighter/dist/esm/styles/hljs/a11y-dark";
 
 export const DataDisplay = (props: {
