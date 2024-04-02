@@ -18,6 +18,8 @@ AutoTransform is a web application that uses LLMs to automatically handle and tr
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/pateli18/autotransform)
 
+**Note**: The provided render.yaml does not have a persistent disk attached, which means if the service is restarted and you are using the `local` file provider the input / output data for a given service will be lost. If you want to persist this data, you will need to upgrade the instance type and [attach a persistent disk](https://docs.render.com/disks) to the service.
+
 ### Run Locally
 
 1. Set Environment Variables
