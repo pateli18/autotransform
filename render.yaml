@@ -38,10 +38,6 @@ services:
         value: '{"save_path": "/app-data/"}'
       - key: LOG_LEVEL
         value: INFO
-    disk:
-      name: autotransformdisk
-      mountPath: /app-data
-      sizeGB: 5
 databases:
   - name: autotransformdb
     postgresMajorVersion: "15"
