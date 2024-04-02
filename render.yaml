@@ -28,7 +28,7 @@ services:
         value: false
       - key: GIT_PROVIDER
         value: github
-      - key: GIT_PROVIDER_TOKEN
+      - key: GIT_PROVIDER_SECRET
         sync: false
       - key: OPENAI_API_KEY
         sync: false
