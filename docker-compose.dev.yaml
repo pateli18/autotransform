@@ -34,8 +34,6 @@ services:
     environment:
       ENVIRONMENT: dev
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      GIT_PROVIDER: github
-      GIT_PROVIDER_SECRET: ${GIT_PROVIDER_SECRET}
       PROCESSING_DEBUG: true
       POSTGRES_URI: postgresql+asyncpg://autotransform:autotransform@postgres:5432/autotransform
     ports:
