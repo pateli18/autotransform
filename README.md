@@ -172,7 +172,7 @@ print(data[0])
 AutoTransform provides a git extension that allows you to store your services code and output schema in a git repository. You can even use the git repository to block output schema and code updates from being applied to your service without a human review. To use the git extension, you will need to provide the following environment variables:
 
 - **GIT_PROVIDER**: The git provider you are using, currently only `github` is supported
-- **GIT_PROVIDER_SECERT**: A secret token that allows the application to access your git repository
+- **GIT_PROVIDER_SECRET**: A secret token that allows the application to access your git repository
   - `github`: this is your [personal access token](https://github.com/settings/tokens?type=beta). It should have the following permissions:
     - _metadata_ - read
     - _code_ - read and write
