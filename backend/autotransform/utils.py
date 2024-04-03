@@ -18,9 +18,15 @@ class Environment(str, Enum):
     prod = "prod"
 
 
+class ModelType(str, Enum):
+    gpt4turbo = "gpt-4-turbo-preview"
+    gpt3turbo = "gpt-3.5-turbo"
+
+
 class Settings(BaseSettings):
     openai_api_key: str
     postgres_uri: str
+    model_type: ModelType = ModelType.gpt4turbo
     file_provider: FileProviderType = FileProviderType.local
     file_provider_config: str = '{"save_path": "/app-data/"}'
     environment: Environment = Environment.dev

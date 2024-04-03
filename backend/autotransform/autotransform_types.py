@@ -11,7 +11,7 @@ from uuid import UUID
 from cachetools import TTLCache
 from pydantic import BaseModel, Field
 
-from autotransform.utils import settings
+from autotransform.utils import ModelType, settings
 
 
 def encode_record(record: dict) -> str:
@@ -45,10 +45,6 @@ class ToolChoiceObject(BaseModel):
 ToolChoice = Optional[Union[Literal["auto"], ToolChoiceObject]]
 
 
-class ModelType(str, Enum):
-    gpt4turbo = "gpt-4-turbo-preview"
-
-
 class ModelChatType(str, Enum):
     system = "system"
     user = "user"
@@ -78,7 +74,7 @@ OpenAiPromptReturnType = tuple[
 
 class OpenAiChatInput(BaseModel):
     messages: list[ModelChat]
-    model: ModelType = ModelType.gpt4turbo
+    model: ModelType = settings.model_type
     max_tokens: Optional[int] = None
     n: int = 1
     temperature: float = 0.0
