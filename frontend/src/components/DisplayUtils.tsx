@@ -1,11 +1,14 @@
 import { Badge, badgeVariants } from "@/components/ui/badge";
-import { DownloadIcon } from "@radix-ui/react-icons";
+import { DownloadIcon, ReloadIcon } from "@radix-ui/react-icons";
 import JsonView from "react18-json-view";
 import { Code, OutputSchema, ProcessingStatus } from "src/types";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import Markdown from "react-markdown";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import a11yDark from "react-syntax-highlighter/dist/esm/styles/hljs/a11y-dark";
+import { reprocessData } from "../utils/apiCalls";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const DataDisplay = (props: {
   title: string;
@@ -133,5 +136,31 @@ export const ExternalGitLink = (props: { url: string; text: string }) => {
     >
       {props.text}
     </a>
+  );
+};
+
+export const ReprocessButton = (props: { configId: string; runId: string }) => {
+  const [reprocessLoading, setReprocessLoading] = useState(false);
+
+  const handleClick = async (
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    event.stopPropagation();
+    setReprocessLoading(true);
+    const response = await reprocessData(props.configId, props.runId);
+    setReprocessLoading(false);
+    if (response === null) {
+      toast.error("Failed to reprocess data");
+    } else {
+      toast.success("Data reprocessing started");
+      window.location.reload();
+    }
+  };
+
+  return (
+    <Button variant="default" onClick={handleClick} size="sm">
+      Reprocess
+      {reprocessLoading && <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />}
+    </Button>
   );
 };

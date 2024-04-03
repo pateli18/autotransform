@@ -93,6 +93,11 @@ class DataToProcess(BaseModel):
     config_id: UUID
 
 
+class RerunRequest(BaseModel):
+    config_id: UUID
+    run_id: UUID
+
+
 def create_qa_prompt(
     config: ProcessingConfig, record: dict
 ) -> list[ModelChat]:
@@ -579,7 +584,7 @@ async def _check_logic_error(
 
 
 async def execute_data_processing(
-    config: ProcessingConfig, data: DataToProcess, event_id: UUID
+    config: ProcessingConfig, records: list[dict], event_id: UUID
 ) -> None:
     if config.git_config is not None:
         git_client = get_git_client(
@@ -591,15 +596,15 @@ async def execute_data_processing(
     try:
         if config.code is None:
             config = await generate_and_test_code(
-                data.config_id, config, git_client
+                config.config_id, config, git_client
             )
 
         # execute code
         outputs: list[dict] = []
         qa_records_run: int = 0
         record_to_process_index: int = 0
-        while record_to_process_index < len(data.records):
-            record = BaseRecord(input=data.records[record_to_process_index])
+        while record_to_process_index < len(records):
+            record = BaseRecord(input=records[record_to_process_index])
             config.add_current_record(record)
             try:
                 output, output_schema_error, execution_error = run_code(
@@ -618,14 +623,14 @@ async def execute_data_processing(
                     config,
                     qa_records_run,
                     record_to_process_index,
-                    len(data.records),
+                    len(records),
                 )
                 outputs.append(output)
                 record_to_process_index += 1
             except Exception as e:
                 logger.info("Error processing record %s: %s", record, e)
                 config = await generate_and_test_code(
-                    data.config_id,
+                    config.config_id,
                     config,
                     git_client,
                 )
@@ -636,7 +641,7 @@ async def execute_data_processing(
         logger.exception("Error processing data")
         passed = False
 
-    logger.info("Processing complete for config %s", data.config_id)
+    logger.info("Processing complete for config %s", config.config_id)
     # create and merge pr
     pr_uri = None
     merged = False
@@ -645,7 +650,7 @@ async def execute_data_processing(
 
     # update processing message
     async with processing_message_queue_lock:
-        processing_message = processing_message_queue[data.config_id]
+        processing_message = processing_message_queue[config.config_id]
         processing_message.pr_uri = pr_uri
         if passed:
             if git_client is not None and not merged:
@@ -654,39 +659,38 @@ async def execute_data_processing(
                 processing_message.complete(output_count=len(outputs))
             await file_client.save_data(
                 outputs,
-                data.config_id,
+                config.config_id,
                 processing_message.id,
                 DataType.output,
             )
         else:
             processing_message.fail()
 
-    logger.info("Processing event complete for config %s", data.config_id)
+    logger.info("Processing event complete for config %s", config.config_id)
     # save processing config and update processing event in db
     async with async_session_scope() as db:
         if passed:
-            await save_processing_config(data.config_id, config, db)
+            await save_processing_config(config.config_id, config, db)
         await update_processing_event(
-            processing_message_queue[data.config_id], db
+            processing_message_queue[config.config_id], db
         )
 
         await db.commit()
 
 
-@router.post("/start", response_model=ProcessEventMetadata)
-async def processing_start(
-    request: DataToProcess,
-    db: async_scoped_session = Depends(get_session),
-) -> ProcessEventMetadata:
-    config = await get_processing_config(request.config_id, db)
+async def _validate_config_for_processing(
+    config_id: UUID,
+    db: async_scoped_session,
+) -> ProcessingConfig:
+    config = await get_processing_config(config_id, db)
     if config is None:
         raise HTTPException(
             status_code=404,
             detail="Config not found",
         )
     if (
-        request.config_id in processing_message_queue
-        and processing_message_queue[request.config_id].status
+        config_id in processing_message_queue
+        and processing_message_queue[config_id].status
         == ProcessingStatus.running
     ):
         raise HTTPException(
@@ -696,7 +700,7 @@ async def processing_start(
 
     # check status before processing
     previous_event = await get_latest_config_event(
-        request.config_id,
+        config_id,
         db,
     )
 
@@ -721,22 +725,30 @@ async def processing_start(
                 detail="Service is awaiting review",
             )
 
+    return config
+
+
+async def _start_processing_event(
+    config: ProcessingConfig,
+    records: list[dict],
+    db: async_scoped_session,
+) -> ProcessEventMetadata:
     new_event = await insert_processing_event(
-        config_id=request.config_id,
-        input_count=len(request.records),
+        config_id=config.config_id,
+        input_count=len(records),
         db=db,
     )
 
     task_manager.add_task(
-        str(request.config_id),
+        str(config.config_id),
         execute_data_processing,
         config,
-        request,
+        records,
         new_event.id,
     )
 
     async with processing_message_queue_lock:
-        processing_message_queue[request.config_id] = ProcessingMessage(
+        processing_message_queue[config.config_id] = ProcessingMessage(
             id=cast(UUID, new_event.id),
             config_id=cast(UUID, new_event.config_id),
             runs=[],
@@ -745,15 +757,43 @@ async def processing_start(
         )
 
     await file_client.save_data(
-        request.records,
-        request.config_id,
+        records,
+        config.config_id,
         cast(UUID, new_event.id),
         DataType.input,
     )
 
     await db.commit()
 
-    return processing_message_queue[request.config_id].metadata
+    return processing_message_queue[config.config_id].metadata
+
+
+@router.post("/start", response_model=ProcessEventMetadata)
+async def processing_start(
+    request: DataToProcess,
+    db: async_scoped_session = Depends(get_session),
+) -> ProcessEventMetadata:
+    config = await _validate_config_for_processing(request.config_id, db)
+
+    response = await _start_processing_event(config, request.records, db)
+    return response
+
+
+@router.post("/restart", response_model=ProcessEventMetadata)
+async def processing_restart(
+    request: RerunRequest,
+    db: async_scoped_session = Depends(get_session),
+) -> ProcessEventMetadata:
+    config = await _validate_config_for_processing(request.config_id, db)
+
+    data = []
+    async for line in file_client.read_data(
+        request.config_id, request.run_id, DataType.input
+    ):
+        data.append(json.loads(line))
+
+    response = await _start_processing_event(config, data, db)
+    return response
 
 
 @router.post("/stop/{config_id}/{run_id}", status_code=204)

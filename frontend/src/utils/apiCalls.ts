@@ -73,6 +73,23 @@ export const processData = async (
   return response;
 };
 
+export const reprocessData = async (configId: string, runId: string) => {
+  let response = null;
+  try {
+    response = await Ajax.req<ProcessEventMetadata>({
+      url: `/api/v1/process/restart`,
+      method: "POST",
+      body: {
+        config_id: configId,
+        run_id: runId,
+      },
+    });
+  } catch (e) {
+    console.error(e);
+  }
+  return response;
+};
+
 export const stopProcess = async (configId: string, runId: string) => {
   let response = false;
   try {

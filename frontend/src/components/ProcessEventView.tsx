@@ -21,6 +21,7 @@ import {
   DataDisplay,
   ExternalGitLink,
   OutputSchemaView,
+  ReprocessButton,
   StatusDisplay,
 } from "./DisplayUtils";
 import { loadAndFormatDate } from "../utils/date";
@@ -288,6 +289,12 @@ export const ProcessEventView = (props: {
           <ExternalGitLink
             url={props.processingEvent.message.pr_uri}
             text="View PR"
+          />
+        )}
+        {props.processingEvent.message.status !== "running" && (
+          <ReprocessButton
+            configId={props.processingEvent.message.config_id}
+            runId={props.processingEvent.message.id}
           />
         )}
       </div>
