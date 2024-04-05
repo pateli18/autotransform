@@ -223,32 +223,35 @@ export const ConfigForm = (props: {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Labeled Data</FormLabel>
-              <Input
-                type="file"
-                accept=".json"
-                onChange={(e) => {
-                  if (e.target.files) {
-                    const file = e.target.files[0];
-                    readJson(file, jsonValidator)
-                      .then((data) => {
-                        form.setValue("labeledData", data);
-                        form.clearErrors("labeledData");
-                      })
-                      .catch((e) => {
-                        console.error(e);
-                        form.setError(
-                          "labeledData",
-                          {
-                            type: "invalid",
-                            message: e.toString(),
-                          },
-                          { shouldFocus: true }
-                        );
-                        form.reset({ labeledData: undefined });
-                      });
-                  }
-                }}
-              />
+              <FormControl>
+                <Input
+                  {...field}
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      const file = e.target.files[0];
+                      readJson(file, jsonValidator)
+                        .then((data) => {
+                          form.setValue("labeledData", data);
+                          form.clearErrors("labeledData");
+                        })
+                        .catch((e) => {
+                          console.error(e);
+                          form.setError(
+                            "labeledData",
+                            {
+                              type: "invalid",
+                              message: e.toString(),
+                            },
+                            { shouldFocus: true }
+                          );
+                          form.reset({ labeledData: undefined });
+                        });
+                    }
+                  }}
+                />
+              </FormControl>
               <FormDescription>
                 Each record should be a json object with an `input` key and an
                 `output` key, with corresponding json objects as values
@@ -397,7 +400,7 @@ const ConfigView = (props: {
 
   return (
     <Drawer open={props.drawerOpen} onOpenChange={props.setDrawerOpen}>
-      <DrawerContent className="max-h-[90%]">
+      <DrawerContent className="h-[90%]">
         <DrawerHeader>
           <DrawerTitle>Configure Service</DrawerTitle>
         </DrawerHeader>

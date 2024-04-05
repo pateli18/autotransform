@@ -1,12 +1,70 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { parseSchema } from "../utils/apiCalls";
 import { toast } from "sonner";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import JsonView from "react18-json-view";
 import "react18-json-view/src/style.css";
 import { LabeledExample } from "src/types";
+import { FormControl } from "@/components/ui/form";
+
+const SchemaButtons = (props: {
+  inputView: boolean;
+  inputValue: string;
+  handleParseClick: () => void;
+  useLabeledExamplesLoading: boolean;
+  parseLoading: boolean;
+  labeledData: LabeledExample[] | null;
+  handleUseLabeledExamplesClick: () => void;
+  setEditView: (value: boolean) => void;
+  parsedValue: Object | null;
+}) => {
+  return props.inputView ? (
+    <>
+      <Button
+        onClick={props.handleParseClick}
+        disabled={
+          !props.inputValue ||
+          props.useLabeledExamplesLoading ||
+          props.parseLoading
+        }
+      >
+        Parse
+        {props.parseLoading && (
+          <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />
+        )}
+      </Button>
+      <Button
+        disabled={
+          !props.labeledData ||
+          props.parseLoading ||
+          props.useLabeledExamplesLoading
+        }
+        onClick={props.handleUseLabeledExamplesClick}
+      >
+        Use Labeled Data
+        {props.useLabeledExamplesLoading && (
+          <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />
+        )}
+      </Button>
+      {props.parsedValue !== null && (
+        <Button variant="secondary" onClick={() => props.setEditView(false)}>
+          Back to Schema
+        </Button>
+      )}
+    </>
+  ) : (
+    <Button
+      variant="secondary"
+      onClick={() => {
+        props.setEditView(true);
+      }}
+    >
+      Edit
+    </Button>
+  );
+};
 
 export const OutputSchema = (props: {
   labeledData: LabeledExample[] | null;
@@ -46,58 +104,30 @@ export const OutputSchema = (props: {
 
   return (
     <div className="space-y-5">
+      <SchemaButtons
+        inputView={inputView}
+        inputValue={inputValue}
+        handleParseClick={handleParseClick}
+        useLabeledExamplesLoading={useLabeledExamplesLoading}
+        parseLoading={parseLoading}
+        labeledData={props.labeledData}
+        handleUseLabeledExamplesClick={handleUseLabeledExamplesClick}
+        setEditView={setEditView}
+        parsedValue={props.parsedValue}
+      />
       {inputView ? (
-        <Textarea
-          placeholder="Paste your schema here, it can be anything (jsonschema, pydantic class, a normal data record) and we will automatically parse it for you"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          rows={5}
-        />
+        <FormControl>
+          <Textarea
+            placeholder="Paste your schema here, it can be anything (jsonschema, pydantic class, a normal data record) and we will automatically parse it for you"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            rows={5}
+          />
+        </FormControl>
       ) : (
         <JsonView src={props.parsedValue} />
       )}
-      <div className="flex items-center space-x-2">
-        {inputView ? (
-          <>
-            <Button
-              onClick={handleParseClick}
-              disabled={
-                !inputValue || useLabeledExamplesLoading || parseLoading
-              }
-            >
-              Parse
-              {parseLoading && (
-                <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />
-              )}
-            </Button>
-            <Button
-              disabled={
-                !props.labeledData || parseLoading || useLabeledExamplesLoading
-              }
-              onClick={handleUseLabeledExamplesClick}
-            >
-              Use Labeled Data
-              {useLabeledExamplesLoading && (
-                <ReloadIcon className="ml-2 h-4 w-4 animate-spin" />
-              )}
-            </Button>
-            {props.parsedValue !== null && (
-              <Button variant="secondary" onClick={() => setEditView(false)}>
-                Back to Schema
-              </Button>
-            )}
-          </>
-        ) : (
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setEditView(true);
-            }}
-          >
-            Edit
-          </Button>
-        )}
-      </div>
+      <div className="flex items-center space-x-2">{}</div>
     </div>
   );
 };
