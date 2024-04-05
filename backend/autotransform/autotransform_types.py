@@ -74,7 +74,7 @@ OpenAiPromptReturnType = tuple[
 
 class OpenAiChatInput(BaseModel):
     messages: list[ModelChat]
-    model: ModelType = settings.model_type
+    model: ModelType = settings.model
     max_tokens: Optional[int] = None
     n: int = 1
     temperature: float = 0.0

@@ -26,7 +26,7 @@ class ModelType(str, Enum):
 class Settings(BaseSettings):
     openai_api_key: str
     postgres_uri: str
-    model_type: ModelType = ModelType.gpt4turbo
+    model: ModelType = ModelType.gpt4turbo
     file_provider: FileProviderType = FileProviderType.local
     file_provider_config: str = '{"save_path": "/app-data/"}'
     environment: Environment = Environment.dev
