@@ -10,7 +10,6 @@ import { LabeledExample } from "src/types";
 import { FormControl } from "@/components/ui/form";
 
 const SchemaButtons = (props: {
-  inputView: boolean;
   inputValue: string;
   handleParseClick: () => void;
   useLabeledExamplesLoading: boolean;
@@ -20,8 +19,8 @@ const SchemaButtons = (props: {
   setEditView: (value: boolean) => void;
   parsedValue: Object | null;
 }) => {
-  return props.inputView ? (
-    <>
+  return (
+    <div className="space-x-2">
       <Button
         onClick={props.handleParseClick}
         disabled={
@@ -53,16 +52,7 @@ const SchemaButtons = (props: {
           Back to Schema
         </Button>
       )}
-    </>
-  ) : (
-    <Button
-      variant="secondary"
-      onClick={() => {
-        props.setEditView(true);
-      }}
-    >
-      Edit
-    </Button>
+    </div>
   );
 };
 
@@ -104,30 +94,41 @@ export const OutputSchema = (props: {
 
   return (
     <div className="space-y-5">
-      <SchemaButtons
-        inputView={inputView}
-        inputValue={inputValue}
-        handleParseClick={handleParseClick}
-        useLabeledExamplesLoading={useLabeledExamplesLoading}
-        parseLoading={parseLoading}
-        labeledData={props.labeledData}
-        handleUseLabeledExamplesClick={handleUseLabeledExamplesClick}
-        setEditView={setEditView}
-        parsedValue={props.parsedValue}
-      />
       {inputView ? (
-        <FormControl>
-          <Textarea
-            placeholder="Paste your schema here, it can be anything (jsonschema, pydantic class, a normal data record) and we will automatically parse it for you"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            rows={5}
+        <>
+          <SchemaButtons
+            inputValue={inputValue}
+            handleParseClick={handleParseClick}
+            useLabeledExamplesLoading={useLabeledExamplesLoading}
+            parseLoading={parseLoading}
+            labeledData={props.labeledData}
+            handleUseLabeledExamplesClick={handleUseLabeledExamplesClick}
+            setEditView={setEditView}
+            parsedValue={props.parsedValue}
           />
-        </FormControl>
+
+          <FormControl>
+            <Textarea
+              placeholder="Paste your schema here, it can be anything (jsonschema, pydantic class, a normal data record) and we will automatically parse it for you"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              rows={5}
+            />
+          </FormControl>
+        </>
       ) : (
-        <JsonView src={props.parsedValue} />
+        <>
+          <JsonView src={props.parsedValue} />
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setEditView(true);
+            }}
+          >
+            Edit
+          </Button>
+        </>
       )}
-      <div className="flex items-center space-x-2">{}</div>
     </div>
   );
 };
