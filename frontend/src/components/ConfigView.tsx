@@ -223,35 +223,32 @@ export const ConfigForm = (props: {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Labeled Data</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="file"
-                  accept=".json"
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      const file = e.target.files[0];
-                      readJson(file, jsonValidator)
-                        .then((data) => {
-                          form.setValue("labeledData", data);
-                          form.clearErrors("labeledData");
-                        })
-                        .catch((e) => {
-                          console.error(e);
-                          form.setError(
-                            "labeledData",
-                            {
-                              type: "invalid",
-                              message: e.toString(),
-                            },
-                            { shouldFocus: true }
-                          );
-                          form.reset({ labeledData: undefined });
-                        });
-                    }
-                  }}
-                />
-              </FormControl>
+              <Input
+                id="labeled-data-input"
+                type="file"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    const file = e.target.files[0];
+                    readJson(file, jsonValidator)
+                      .then((data) => {
+                        form.setValue("labeledData", data);
+                        form.clearErrors("labeledData");
+                      })
+                      .catch((e) => {
+                        console.error(e);
+                        form.setError(
+                          "labeledData",
+                          {
+                            type: "invalid",
+                            message: e.toString(),
+                          },
+                          { shouldFocus: true }
+                        );
+                        form.reset({ labeledData: undefined });
+                      });
+                  }
+                }}
+              />
               <FormDescription>
                 Each record should be a json object with an `input` key and an
                 `output` key, with corresponding json objects as values
