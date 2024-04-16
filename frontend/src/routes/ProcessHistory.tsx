@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DataDisplay } from "../components/DisplayUtils";
+import { ConfigInfo, DataDisplay } from "../components/DisplayUtils";
 import {
   Form,
   FormDescription,
@@ -230,6 +230,7 @@ export const ProcessHistoryRoute = () => {
           setProcessEvents={setProcessEvents}
         />
       )}
+      {config !== null && <ConfigInfo name={config.name} />}
       {dataLoading ? (
         <div className="flex items-center justify-center h-40">
           <Loader2 className="h-8 w-8 animate-spin" />

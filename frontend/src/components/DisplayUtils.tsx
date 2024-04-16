@@ -164,3 +164,11 @@ export const ReprocessButton = (props: { configId: string; runId: string }) => {
     </Button>
   );
 };
+
+export const ConfigInfo = (props: { name: string }) => {
+  return (
+    <div className="space-y-2">
+      {props.name && <div className="text-lg font-bold">{props.name}</div>}
+    </div>
+  );
+};
