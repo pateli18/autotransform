@@ -19,7 +19,7 @@ class Environment(str, Enum):
 
 
 class ModelType(str, Enum):
-    gpt4turbo = "gpt-4-turbo-preview"
+    gpt4turbo = "gpt-4-turbo"
     gpt3turbo = "gpt-3.5-turbo"
 
 
